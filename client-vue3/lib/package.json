@@ -1,0 +1,16 @@
+{
+  "name": "@cortezaproject/corteza-vue",
+  "version": "2025.9.0-dev.1",
+  "type": "module",
+  "main": "./index.ts",
+  "peerDependencies": {
+    "vue": "^3.5.13",
+    "primevue": "^4.3.5",
+    "primeicons": "^7.0.0"
+  },
+  "devDependencies": {
+    "vue": "^3.5.13",
+    "primevue": "^4.3.5",
+    "primeicons": "^7.0.0"
+  }
+}
