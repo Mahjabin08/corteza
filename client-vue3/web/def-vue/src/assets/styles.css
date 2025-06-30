@@ -1,0 +1,13 @@
+@import './fonts.css';
+@import 'tailwindcss';
+@import 'tailwindcss-primeui';
+@import 'primeicons/primeicons.css';
+
+html {
+  font-size: 14px;
+}
+
+body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@cortezaproject/corteza-vue-next",
+  "version": "2025.9.0-dev.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "cdeps": "yarn link @cortezaproject/corteza-js-next"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./composables/*": "./composables/*",
+    "./plugins/*": "./plugins/*",
+    "./components/*": "./components/*"
+  },
+  "peerDependencies": {
+    "@cortezaproject/corteza-js-next": "file:../js",
+    "axios": "^1.10.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.5",
+    "typescript": "^5.0.0",
+    "vue": "^3.5.13",
+    "vue-i18n": "9"
+  },
+  "devDependencies": {
+    "@cortezaproject/corteza-js-next": "file:../js",
+    "axios": "^1.10.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.5",
+    "typescript": "^5.0.0",
+    "vue": "^3.5.13",
+    "vue-i18n": "9"
+  }
+}

@@ -1,10 +1,9 @@
 {
-  "name": "@cortezaproject/corteza-js",
+  "name": "@cortezaproject/corteza-js-next",
   "description": "Corteza JavaScript/TypeScript libs",
-  "version": "2024.9.3-rc.2",
+  "version": "2025.9.0-dev.1",
   "license": "Apache-2.0",
   "type": "module",
-  "author": "Denis Arh <denis.arh@crust.tech>",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
