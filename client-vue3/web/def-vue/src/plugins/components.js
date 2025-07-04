@@ -24,41 +24,40 @@ const CortezaTheme = definePreset(Aura, {
     },
   },
   css: ({ dt }) => `
-        /* Global CSS */
-        body {
-            background-color: ${dt('body.backgroundColor')};
-        }
-    `,
+    body {
+      background-color: ${dt('body.backgroundColor')};
+    }
+  `,
 })
 
-export function setupPrimeVue(app) {
-  // Configure PrimeVue with theme
-  app.use(PrimeVue, {
-    theme: {
-      preset: CortezaTheme,
-      options: {
-        darkModeSelector: 'none',
-        cssLayer: {
-          name: 'primevue',
-          order: 'theme, base, primevue',
+export const PrimeVuePlugin = {
+  install(app, options = {}) {
+    // Configure PrimeVue with theme
+    app.use(PrimeVue, {
+      theme: {
+        preset: CortezaTheme,
+        options: {
+          darkModeSelector: 'none',
+          cssLayer: {
+            name: 'primevue',
+            order: 'theme, base, primevue',
+          },
         },
       },
-    },
-  })
+    })
 
-  // Add ToastService
-  app.use(ToastService)
+    // Add Services
+    app.use(ToastService)
 
-  // Register components
-  app.component('Button', Button)
-  app.component('Toast', Toast)
-  app.component('Menu', Menu)
-}
+    // Register components
+    app.component('Button', Button)
+    app.component('Toast', Toast)
+    app.component('Menu', Menu)
 
-export function setupToastService(app) {
-  // Set up toast service after plugins are registered and before mounting
-  const toastService = app.config.globalProperties.$toast
-  if (toastService) {
-    setToastService(toastService)
+    // Set up toast service integration with Corteza
+    const toastService = app.config.globalProperties.$toast
+    if (toastService) {
+      setToastService(toastService)
+    }
   }
 }

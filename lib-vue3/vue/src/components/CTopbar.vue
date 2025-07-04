@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineProps, inject } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useApiClients } from '../composables/useApiClients'
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
@@ -119,10 +119,6 @@ const props = defineProps<{
   settings: TopbarSettings
   labels: TopbarLabels
 }>()
-
-// Composables
-const auth = inject('auth') as any
-const { SystemAPI } = useApiClients()
 
 // Refs
 const helpMenu = ref()
@@ -303,8 +299,10 @@ const saveThemeMode = async (theme: string) => {
   // TODO: Save theme to user profile via API
 }
 
+const $auth = inject('auth') as any
+
 const logout = () => {
-  auth.logout()
+  $auth.logout()
 }
 </script>
 

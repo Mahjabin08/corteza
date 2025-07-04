@@ -70,9 +70,17 @@ class AuthManager {
   private config: AuthConfig
   private $emit: ((event: string, ...args: unknown[]) => void) | undefined
 
+  // Pre-computed reactive refs for performance
+  public readonly userRef: ComputedRef<system.User | undefined>
+  public readonly accessTokenRef: ComputedRef<string | undefined>
+
   constructor(config: AuthConfig, emitFn?: (event: string, ...args: unknown[]) => void) {
     this.config = config
     this.$emit = emitFn
+
+    // Create computed refs once for performance
+    this.userRef = computed(() => this.user.value)
+    this.accessTokenRef = computed(() => this.accessToken.value)
 
     const log = this.getLogger()
     log.debug('initialized auth manager', {
@@ -412,21 +420,13 @@ class AuthManager {
     })
   }
 
-  // Getters for reactive values
-  public get userRef() {
-    return computed(() => this.user.value)
-  }
-
-  public get accessTokenRef() {
-    return computed(() => this.accessToken.value)
-  }
-
+  // Simplified getters that return pre-created computed refs
   public get accessTokenFn() {
     return () => this.accessToken.value
   }
 }
 
-export default {
+export const AuthPlugin = {
   install(app: App, options: AuthPluginOptions = {}) {
     let {
       app: appName = '',
@@ -516,13 +516,11 @@ export default {
       refreshFactor,
     }
 
-    // Create the auth manager instance
     const authManager = new AuthManager(authConfig, (event: string, ...args: unknown[]) => {
       // Emit events on the app instance
       app.config.globalProperties.$emit?.(event, ...args)
     })
 
-    // Create auth object with the same interface as the old composable
     const auth = {
       user: authManager.userRef,
       accessToken: authManager.accessTokenRef,
@@ -534,10 +532,8 @@ export default {
       stopAutoLogout: authManager.stopAutoLogout.bind(authManager),
     }
 
-    // Add to global properties for backward compatibility
     app.config.globalProperties.$auth = {
       ...auth,
-      // Add backward compatibility properties
       get cortezaAuthURL() { return cortezaAuthURL },
       get callbackURL() { return callbackURL },
       get entrypointURL() { return entrypointURL },
@@ -545,7 +541,6 @@ export default {
       get verbose() { return verbose },
     }
 
-    // Provide auth for composition API
     app.provide('auth', auth)
   }
 }

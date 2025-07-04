@@ -1,6 +1,18 @@
 <template>
   <div id="app" class="h-screen flex flex-col">
-    <header>
+    <header class="bg-white shadow-sm">
+      <!-- Logo Section -->
+      <div class="px-4 py-2 border-b">
+        <div class="flex items-center space-x-4">
+          <img
+            v-if="logoUrl"
+            :src="logoUrl"
+            alt="Logo"
+            class="h-12 w-auto object-contain"
+          >
+        </div>
+      </div>
+
       <CTopbar
         :sidebar-expanded="false"
         :settings="topbarSettings"
@@ -19,10 +31,17 @@
 </template>
 
 <script setup>
+import { computed, inject } from 'vue'
 import { RouterView } from 'vue-router'
 import { CTopbar, useI18n } from '@cortezaproject/corteza-vue-next'
 
 const { t } = useI18n()
+
+const $Settings = inject('settings')
+
+const logoUrl = computed(() => {
+  return $Settings.attachment('ui.mainLogo')
+})
 
 const topbarSettings = {
   hideAppSelector: true,
