@@ -1,1 +1,1 @@
-export { default as CTopbar } from './CTopbar.vue' 
+export * from './navigation'

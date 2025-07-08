@@ -11,15 +11,15 @@ export class Settings {
   current = reactive<Record<string, any>>({})
   api: any = undefined
 
-  constructor() {
+  constructor({ api }: { api: any }) {
+    this.api = api.value || api
+
     return this
   }
 
-  async init({ api }: { api: any }) {
-    // Handle computed refs by getting the .value if it exists
-    this.api = api?.value || api
+  async init() {
     if (!this.api) {
-      throw new Error('api.notDefined')
+      throw new Error('Settings plugin requires an api instance')
     }
 
     return this.fetch()
@@ -27,9 +27,7 @@ export class Settings {
 
   async fetch() {
     try {
-      // Handle computed refs by getting the .value if it exists
-      const apiClient = this.api?.value || this.api
-      const response = await apiClient.settingsCurrent()
+      const response = await this.api.settingsCurrent()
       this.current = reactive(response || {})
 
       return response
@@ -72,11 +70,8 @@ export class Settings {
       if (match) {
         const attachmentID = match[1]
 
-        // Handle computed refs by getting the .value if it exists
-        const apiClient = this.api?.value || this.api
-
-        return apiClient.baseURL +
-          apiClient.attachmentOriginalEndpoint({
+        return this.api.baseURL +
+          this.api.attachmentOriginalEndpoint({
             attachmentID,
             kind: 'settings',
             name: k,
@@ -85,10 +80,7 @@ export class Settings {
     }
 
     if (src) {
-      // Handle computed refs by getting the .value if it exists
-      const apiClient = this.api?.value || this.api
-
-      return apiClient.baseURL
+      return this.api.baseURL
         .replace(/\/system$/, '')
         .replace(/\/api$/, '') + src
     }
@@ -100,8 +92,11 @@ export class Settings {
 export const SettingsPlugin = {
   install(app: App, options: SettingsOptions = {}) {
     try {
-      // Create settings instance
-      const settings = new Settings()
+      if (!options.api) {
+        throw new Error('Settings plugin requires an api instance')
+      }
+
+      const settings = new Settings({ api: options.api })
 
       app.config.globalProperties.$Settings = settings
 

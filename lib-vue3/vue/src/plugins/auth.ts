@@ -1,296 +1,333 @@
-import type { App } from 'vue'
-import { ref, computed, type ComputedRef } from 'vue'
-import axios, { type AxiosInstance } from 'axios'
+import axios, { AxiosInstance } from 'axios'
+import { Make } from '../libs/url'
 import { system } from '@cortezaproject/corteza-js-next'
+import type { App } from 'vue'
 
-// Constants from original plugin
+const accessToken = Symbol('accessToken')
+const user = Symbol('user')
+
+/**
+ * This is an endpoint of an oauth2 authorization-code flow + refresh token exchange
+ * for default client.
+ *
+ * If you are concerned about security, this is not much different to using a dedicated backend
+ * for this SPA that only redirects to a set of allowed URIs.
+ */
 const oauth2FlowURL = '/oauth2/default-client'
 const oauth2InfoURL = '/oauth2/info'
 const oauth2Scope = 'profile api'
+
 const storeKeyFlowStarted = 'auth.flow-started'
 const storeKeyFinalState = 'auth.state.final'
 const storeKeyRefreshToken = 'auth.refresh-token'
+
 const maxStartAttempts = 5
 
+// signature copied from dom definition
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-undef
+type eventListenerSignature = <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions) => void
+
 interface AuthInfo {
-  accessTokenFn: () => string | undefined
-  user: system.User
+  accessTokenFn: () => string | undefined;
+  user: system.User;
 }
 
 interface OAuth2TokenResponse {
-  aud: string
-  sub: string
-  scope: string
-  access_token: string
-  refresh_token: string
-  expires_in: number
-  roles?: string[]
-  name?: string
-  handle?: string
-  email?: string
-  preferred_language?: string
-  avatarID?: string
-  theme?: string
+  aud: string;
+  sub: string;
+  scope: string;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+
+  roles?: string[];
+  name?: string;
+  handle?: string;
+  email?: string;
+  preferred_language?: string;
+  avatarID?: string;
+  theme?: string;
 }
 
-interface AuthConfig {
-  app: string
-  verbose?: boolean
-  cortezaAuthURL: string
-  callbackURL: string
-  entrypointURL?: string
-  refreshFactor?: number
+interface PluginOpts {
+  cortezaAuthURL: string;
+  callbackURL: string;
 }
 
-interface AuthPluginOptions {
-  app?: string
-  rootApp?: boolean
-  cortezaAuthURL?: string
-  callbackURL?: string
-  verbose?: boolean
-  refreshFactor?: number
-  entrypointURL?: string
+interface AuthCtor {
+  app: string;
+
+  /**
+   * when true, use console as a logger, no-op otherwise.
+   */
+  verbose: boolean;
+
+  /**
+   * where the auth backend is
+   */
+  cortezaAuthURL: string;
+
+  /**
+   * URL we'll be listening to for callbacks
+   */
+  callbackURL: string;
+
+  /**
+   * used for redirection
+   */
+  location: Location;
+
+  /**
+   * used for storing
+   */
+  sessionStorage: Storage;
+
+  /**
+   * used for event listeners
+   */
+  registerEventListener: eventListenerSignature;
+
+  /**
+   * Static string with entry-point URL stored at app init
+   * so that there is no risk of changes when Vue router gets it's hands on it
+   */
+  entrypointURL: string;
+
+  /**
+   * multiply factor for token expiration
+   * this will tell internal refresh system how much
+   * before the token expiration we'll refresh the access token
+   *
+   * keep in mind that access token is exchanged on every app load
+   */
+  refreshFactor: number;
 }
 
 interface Logger {
-  debug(...data: unknown[]): void
-  info(...data: unknown[]): void
-  error(...data: unknown[]): void
+  debug(...data: unknown[]): void;
+  info(...data: unknown[]): void;
+  error(...data: unknown[]): void;
 }
 
-function makeUrl(url: string): string {
-  return url.replace(/\/+$/, '')
-}
+export class Auth {
+  /**
+   * Access token is only stored here (in-memory)!
+   * we do not want to keep it in the local store
+   */
+  private [accessToken]?: string
 
-class AuthManager {
-  private accessToken = ref<string | undefined>(undefined)
-  private user = ref<system.User | undefined>(undefined)
-  private refreshTimeout: number | undefined
-  private expiresIn = 0
-  private config: AuthConfig
-  private $emit: ((event: string, ...args: unknown[]) => void) | undefined
+  /**
+   * Access token is only stored here (in-memory)!
+   * we do not want to keep it in the local store
+   */
+  private [user]?: system.User
 
-  // Pre-computed reactive refs for performance
-  public readonly userRef: ComputedRef<system.User | undefined>
-  public readonly accessTokenRef: ComputedRef<string | undefined>
+  /**
+   * Name of the app that is using the auth plugin
+   */
+  readonly app: string
 
-  constructor(config: AuthConfig, emitFn?: (event: string, ...args: unknown[]) => void) {
-    this.config = config
-    this.$emit = emitFn
+  readonly refreshFactor: number
+  readonly verbose: boolean
+  readonly cortezaAuthURL: string
+  readonly callbackURL: string
+  readonly location: Location
+  readonly sessionStorage: Storage
+  readonly registerEventListener: eventListenerSignature
 
-    // Create computed refs once for performance
-    this.userRef = computed(() => this.user.value)
-    this.accessTokenRef = computed(() => this.accessToken.value)
+  /**
+   * Application entrypoint URL
+   */
+  readonly entrypointURL: string
 
-    const log = this.getLogger()
-    log.debug('initialized auth manager', {
-      app: config.app,
-      cortezaAuthURL: config.cortezaAuthURL,
-      callbackURL: config.callbackURL,
-      entrypointURL: config.entrypointURL,
+  /**
+   * Keeps track of timeout callback in case we re-run it before it timesout
+   * @private
+   */
+  private refreshTimeout?: number
+  private expiresIn: number
+
+  private $emit?: (event: string, ...args: unknown[]) => unknown
+
+  constructor ({ app, verbose, cortezaAuthURL, callbackURL, entrypointURL, location, sessionStorage, refreshFactor, registerEventListener }: AuthCtor) {
+    if (refreshFactor >= 1 || refreshFactor <= 0) {
+      throw new Error('refreshFactor should be between 0 and 1')
+    }
+
+    this.app = app
+    this.verbose = verbose
+    this.cortezaAuthURL = cortezaAuthURL
+    this.callbackURL = callbackURL
+    this.location = location
+    this.sessionStorage = sessionStorage
+    this.registerEventListener = registerEventListener
+    this.refreshFactor = refreshFactor
+    this.entrypointURL = entrypointURL
+    this.expiresIn = 0
+
+    this.log.debug('initialized auth plugin', {
+      app,
+      cortezaAuthURL,
+      callbackURL,
+      entrypointURL,
     })
   }
 
-  private getAxios(): AxiosInstance {
-    return axios.create({ baseURL: this.config.cortezaAuthURL })
+  // Vue 3 equivalent - setup emit function
+  setupEmitter (app: App): Auth {
+    // In Vue 3, we can use app.config.globalProperties for global event emitting
+    // or implement a custom event emitter if needed
+    this.$emit = (event, ...args): void => {
+      // Emit to app instance if it has an emit method
+      if (app && typeof (app as any).emit === 'function') {
+        (app as any).emit(event, ...args)
+      }
+    }
+    return this
   }
 
-  private getLogger(): Logger {
-    if (this.config.verbose) {
+  get axios (): AxiosInstance {
+    return axios.create({ baseURL: this.cortezaAuthURL })
+  }
+
+  /**
+   * wrapper for console (when in debug mode) or a simple no-op obj
+   */
+  get log (): Logger {
+    if (this.verbose) {
       return console
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const noop = (): void => {}
-    return { debug: noop, info: noop, error: noop }
+
+    return {
+      debug: noop,
+      info: noop,
+      error: noop,
+    }
   }
 
-  private handleStateManagement(): boolean {
-    const dup = window.sessionStorage.getItem(storeKeyFinalState) !== null
+  /**
+   * Returns function that returns current access token
+   */
+  get accessTokenFn (): () => string | undefined {
+    return (): string | undefined => { return this[accessToken] }
+  }
+
+  /**
+   * Handles initial authentication check
+   *
+   * handle function should be called immediately when application is created
+   * it checks whether app was requested on an URL with /auth/callback at the end
+   * if there is an error or code passed and handles that request appropriately:
+   *
+   *  .../auth/callback?code=... exchanged authorization code for access token
+   *  .../auth/callback?error=... renders an error that we got from the oauth2 provider
+   *
+   * If handle was called without /auth/callback or without params mentioned above:
+   *   if user is not authorized, redirect to the configured path to start oauth2 flow
+   *   if user is authorized, continue with execution
+   */
+  async handle (req: URL = new URL(this.entrypointURL)): Promise<AuthInfo | null> {
+    this.log.info('handling authentication')
+
+    // State management
+    const dup = this.handleStateManagement()
+    if (dup) {
+      this.log.debug('duplicate tab: unauthorized')
+      throw new Error('Unauthenticated')
+    }
+
+    // Handle auth callback requests
+    const params = new URLSearchParams(req.search)
+    if (this.isCallback(req.pathname) && (params.has('error') || params.has('code'))) {
+      if (params.has('error')) {
+        throw new Error(params.get('error') || 'authentication flow failed with error')
+      }
+
+      this.log.info('handling authentication callback')
+      return this.handleCallbackRoute(params.get('state'), (params.has('code') ? params.get('code') as string : ''))
+    }
+
+    // Handle auth from the current system state
+    this.log.info('handling authentication from state')
+    return this.handleState()
+  }
+
+  /**
+   * Flagging session storage
+   *
+   * Challenge with sessions and browser tabs:
+   * Each browser tab & window interacts with an isolated session. When user clicks on a link to and wants to open
+   * it in a new window or a tab, or when tab is duplicated, session contents are copied!
+   *
+   * Consequences of that are that two (or more) tabs end up with the same session
+   * and the same refresh token, and we need to detect if we're dealing with refresh token in an old or new  session.
+   *
+   * With this function we start the final state and flag the session. This way we'll
+   * know, after the redirection to the final location, if this is a final stage or not and if the refresh token
+   * belongs to this session or not.
+   */
+  handleStateManagement (): boolean {
+    // See if this is a duplicate
+    const dup = this.sessionStorage.getItem(storeKeyFinalState) !== null
     window.sessionStorage.setItem(storeKeyFinalState, Date.now().toString())
     return dup
   }
 
-  private bindListeners(): void {
-    const cleanFlags = () => {
-      window.sessionStorage.removeItem(storeKeyFinalState)
-    }
+  bindListeners (): void {
+    // binding multiple listeners for cases where some browser refuser
+    // to emit one of them.
+    this.registerEventListener('pagehide', () => {
+      this.cleanFlags()
+    })
 
-    window.addEventListener('pagehide', cleanFlags)
-    window.addEventListener('unload', cleanFlags)
-    window.addEventListener('beforeunload', cleanFlags)
+    this.registerEventListener('unload', () => {
+      this.cleanFlags()
+    })
+
+    this.registerEventListener('beforeunload', () => {
+      this.cleanFlags()
+    })
   }
 
-  private cleanFlags(): void {
-    window.sessionStorage.removeItem(storeKeyFinalState)
+  cleanFlags (): void {
+    this.sessionStorage.removeItem(storeKeyFinalState)
   }
 
-  private completeFinalState(): void {
-    window.sessionStorage.removeItem(storeKeyFlowStarted)
+  /**
+   * Called when refresh token is re-fetched.
+   *
+   * Cleanup aux items in the session store
+   */
+  completeFinalState (): void {
+    this.sessionStorage.removeItem(storeKeyFlowStarted)
+
     const stateKey = /^auth\.state\.\w+\.location$/
-    for (let i = 0; i < window.sessionStorage.length; i++) {
-      const key = window.sessionStorage.key(i)
+    for (let i = 0; i < this.sessionStorage.length; i++) {
+      const key = this.sessionStorage.key(i)
       if (key !== null && stateKey.test(key)) {
-        window.sessionStorage.removeItem(key)
+        this.sessionStorage.removeItem(key)
       }
     }
   }
 
-  private isCallback(url: string): boolean {
-    return /\/auth\/callback$/.test(url)
-  }
-
-  private getRedirect(url: string): string {
-    const u = new URL(url)
-    if (this.isCallback(u.pathname)) {
-      u.pathname = ''
-      u.search = ''
-      u.hash = ''
-    }
-    return u.toString()
-  }
-
-  private incFlowCounter(): void {
-    const aux = window.sessionStorage.getItem(storeKeyFlowStarted)
-    if (aux === null) {
-      window.sessionStorage.setItem(storeKeyFlowStarted, '1')
-      return
-    }
-
-    const count = parseInt(window.sessionStorage.getItem(storeKeyFlowStarted) as string)
-    if (count >= maxStartAttempts) {
-      window.sessionStorage.removeItem(storeKeyFlowStarted)
-      throw new Error('could not start authentication flow, too many attempts')
-    }
-
-    window.sessionStorage.setItem(storeKeyFlowStarted, (count + 1).toString())
-  }
-
-  private async oauth2token(payload: Record<string, string>): Promise<OAuth2TokenResponse> {
-    const data = new URLSearchParams()
-    const log = this.getLogger()
-
-    log.debug('exchanging for token', payload)
-
-    Object.entries(payload).forEach(([key, value]) => {
-      data.set(key, value)
-    })
-
-    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
-    const { data: responseData } = await this.getAxios().post(oauth2FlowURL, data, { headers })
-    return responseData
-  }
-
-  private procTokenResponse(oa2tkn: OAuth2TokenResponse): AuthInfo {
-    const log = this.getLogger()
-    log.debug('new token', oa2tkn)
-
-    if (this.refreshTimeout) {
-      window.clearTimeout(this.refreshTimeout)
-    }
-
-    this.expiresIn = oa2tkn.expires_in
-    const timeout = this.expiresIn * (this.config.refreshFactor || 0.75)
-
-    log.debug('setting up refresh timeout callback', {
-      expires_in: this.expiresIn,
-      timeout,
-    })
-
-    this.refreshTimeout = window.setTimeout(async () => {
-      const tkn = window.sessionStorage.getItem(storeKeyRefreshToken) || ''
-      try {
-        await this.exchangeRefresh(tkn)
-      } catch (err) {
-        log.error('refresh token exchange failed', err)
-        this.startAuthenticationFlow()
-      }
-    }, 1000 * timeout)
-
-    window.sessionStorage.setItem(storeKeyRefreshToken, oa2tkn.refresh_token)
-
-    const u = new system.User({
-      userID: oa2tkn.sub,
-      meta: {
-        preferredLanguage: oa2tkn.preferred_language || 'en',
-        avatarID: oa2tkn.avatarID,
-        theme: oa2tkn.theme,
-      },
-      ...oa2tkn,
-    })
-
-    this.accessToken.value = oa2tkn.access_token
-    this.user.value = u
-
-    if (this.$emit) {
-      this.$emit('auth-token-processed', {
-        user: u,
-        accessToken: this.accessToken.value,
-      })
-    }
-
-    return {
-      accessTokenFn: () => this.accessToken.value,
-      user: u,
-    }
-  }
-
-  private async exchangeCode(code = ''): Promise<AuthInfo> {
-    const oa2tr = await this.oauth2token({
-      code,
-      scope: oauth2Scope,
-      redirect_uri: this.config.callbackURL,
-    })
-    return this.procTokenResponse(oa2tr)
-  }
-
-  private async exchangeRefresh(refreshToken: string): Promise<AuthInfo | null> {
-    this.completeFinalState()
-
-    try {
-      const oa2tr = await this.oauth2token({
-        refresh_token: refreshToken || '',
-      })
-      return this.procTokenResponse(oa2tr)
-    } catch (err: any) {
-      const { response: { data: { error = undefined } = {} } = {} } = err
-      if (error === 'invalid_grant') {
-        this.pruneStore()
-        throw new Error('Unauthenticated')
-      }
-      throw err
-    }
-  }
-
-  private pruneStore(): void {
-    this.accessToken.value = undefined
-    this.user.value = undefined
-    window.sessionStorage.clear()
-  }
-
-  public startAuthenticationFlow(): void {
-    const log = this.getLogger()
-    log.debug('starting new authentication flow')
-
-    this.cleanFlags()
-    this.incFlowCounter()
-
-    const state = Math.random().toString(36).substring(2)
-    window.sessionStorage.setItem(`auth.state.${state}.location`, this.getRedirect(window.location.toString()))
-
-    const url = new URL(this.config.cortezaAuthURL + oauth2FlowURL)
-    url.searchParams.set('redirect_uri', this.config.callbackURL)
-    url.searchParams.set('scope', oauth2Scope)
-    url.searchParams.set('state', state)
-
-    window.location.assign(url.toString())
-  }
-
-  private async handleCallbackRoute(state: string | null, code: string): Promise<AuthInfo | null> {
-    const log = this.getLogger()
-    let finalLocation = this.config.entrypointURL || window.location.toString()
+  /**
+   * Exchanges the auth parameters for access & refresh token.
+   *
+   * If the parameters are correct and exchange is successful, the refresh token
+   * gets stored in localStorage for further use, the access token and current user get stored
+   * in-memory.
+   *
+   * Function will throw null when user is unauthenticated
+   */
+  async handleCallbackRoute (state: string|null, code: string): Promise<AuthInfo | null> {
+    let finalLocation = this.entrypointURL
 
     if (state) {
       const storeKeyStateLocation = `auth.state.${state}.location`
-      const tmp = window.sessionStorage.getItem(storeKeyStateLocation)
+      const tmp = this.sessionStorage.getItem(storeKeyStateLocation)
       if (tmp === null) {
         console.warn('state does not match, restarting authentication flow')
         this.startAuthenticationFlow()
@@ -298,33 +335,47 @@ class AuthManager {
       }
 
       if (!this.isCallback(tmp)) {
+        // if by some coincidence we got callback URL to finalLocation
+        // we'll silently ignore it and redirect user back to entrypoint
         finalLocation = tmp
       }
 
-      window.sessionStorage.removeItem(storeKeyStateLocation)
+      this.sessionStorage.removeItem(storeKeyStateLocation)
     }
 
-    log.info('authorization code received', code)
+    this.log.info('authorization code received', code)
     const rsp = await this.exchangeCode(code)
 
-    log.info('redirecting back to final destination', finalLocation)
+    this.log.info('redirecting back to final destination', finalLocation)
     this.cleanFlags()
-    window.location.assign(finalLocation)
+    this.location.assign(finalLocation)
     return rsp
   }
 
-  private async handleState(): Promise<AuthInfo | null> {
-    const log = this.getLogger()
-    log.info('checking authentication')
+  /**
+   * Checks current auth state; is access token loaded OR do we have a refresh token we can use
+   *
+   * check uses system API client verify given/current JWT
+   *
+   * If JWT is valid, it is stored into local storage alongside
+   * loaded user.
+   *
+   * We're explicitly passing systemAPI to minimize plugin initialization complexity
+   *
+   * Function will throw null when user is unauthenticated
+   */
+  async handleState (): Promise<AuthInfo | null> {
+    this.log.info('checking authentication')
 
-    if (this.accessToken.value) {
-      log.info('access token found')
-      const headers = { Authorization: `Bearer ${this.accessToken.value}` }
-      log.info('fetching authentication info from ' + oauth2InfoURL)
+    if (this[accessToken]) {
+      this.log.info('access token found')
 
-      try {
-        const { data } = await this.getAxios().get(oauth2InfoURL, { headers })
-        log.info('data fetch from info endpoint', { oauth2InfoURL, headers, data })
+      const headers = { Authorization: `Bearer ${this[accessToken]}` }
+
+      this.log.info('fetching authentication info from ' + oauth2InfoURL)
+
+      return this.axios.get(oauth2InfoURL, { headers }).then(({ data }) => {
+        this.log.info('data fetch form info endpoint', { oauth2InfoURL, headers, data })
 
         const authUser = new system.User({
           userID: data.sub,
@@ -336,98 +387,287 @@ class AuthManager {
           ...data,
         })
 
-        this.user.value = authUser
+        this[user] = authUser
+
         this.bindListeners()
-        return { accessTokenFn: () => this.accessToken.value, user: authUser }
-      } catch (error) {
-        log.error('data fetch from info endpoint failed', { oauth2InfoURL, headers, error })
-        this.accessToken.value = undefined
+        return data
+      }).catch((error) => {
+        this.log.error('data fetch form info endpoint failed', { oauth2InfoURL, headers, error })
+        // assume invalid JWT and remove it
+        this[accessToken] = undefined
         throw new Error('Unauthenticated')
-      }
+      })
     }
 
-    const refreshToken = window.sessionStorage.getItem(storeKeyRefreshToken)
+    const refreshToken = this.sessionStorage.getItem(storeKeyRefreshToken)
     if (refreshToken) {
-      log.debug('refresh token found', { refreshToken })
-      log.info('refreshing token', refreshToken)
+      this.log.debug('refresh token found', { refreshToken })
 
-      const result = await this.exchangeRefresh(refreshToken)
-      if (result) {
-        this.bindListeners()
-      }
-      return result
+      /**
+       * Only exchange refresh token if this is the final state (see startFinalState function for more details)
+       *
+       * If this is a duplicated-session, an error will be thrown and authentication will be (probably)
+       * restarted by the caller.
+       */
+      this.log.info('refreshing token', refreshToken)
+
+      /**
+       * Refresh token found in the storage,
+       * let's use it to get new access token
+       */
+      return this.exchangeRefresh(refreshToken)
+        .then(r => {
+          this.bindListeners()
+          return r
+        })
     }
 
     throw new Error('Unauthenticated')
   }
 
-  public async handle(req?: URL): Promise<AuthInfo | null> {
-    const log = this.getLogger()
-    log.info('handling authenticationn')
-
-    const requestUrl = req || new URL(this.config.entrypointURL || window.location.toString())
-
-    // State management
-    const dup = this.handleStateManagement()
-    if (dup) {
-      log.debug('duplicate tab: unauthorized')
-      throw new Error('Unauthenticated')
-    }
-
-    // Handle auth callback requests
-    const params = new URLSearchParams(requestUrl.search)
-    if (this.isCallback(requestUrl.pathname) && (params.has('error') || params.has('code'))) {
-      if (params.has('error')) {
-        throw new Error(params.get('error') || 'authentication flow failed with error')
-      }
-
-      log.info('handling authentication callback')
-      this.handleCallbackRoute(params.get('state'), params.get('code') as string || '')
-
-      throw new Error('Callback')
-    }
-
-    // Handle auth from the current system state
-    log.info('handling authentication from state')
-    return this.handleState()
-  }
-
-  public logout(): void {
+  logout (): void {
     this.pruneStore()
-    const url = new URL(`${this.config.cortezaAuthURL}/logout`)
-    url.searchParams.set('back', window.location.toString())
-    window.location.assign(url.toString())
+
+    this.location.assign(Make({
+      url: `${this.cortezaAuthURL}/logout`,
+      query: { back: this.location.toString() },
+    }))
   }
 
-  public startAutoLogout(): Promise<number> {
-    const tkn = window.sessionStorage.getItem(storeKeyRefreshToken) || ''
+  /**
+   * Starts new authentication flow
+   *
+   * It generates simple rand state to harden security and to
+   * keep track of before-flow-start location of the user
+   */
+  startAuthenticationFlow (): void {
+    this.log.debug('starting new authentication flow')
+
+    this.cleanFlags()
+    this.incFlowCounter()
+
+    const state = Math.random().toString(36).substring(2)
+    this.sessionStorage.setItem(`auth.state.${state}.location`, this.getRedirect(this.location.toString()))
+
+    this.location.assign(Make({
+      url: `${this.cortezaAuthURL}` + oauth2FlowURL,
+      query: {
+        redirect_uri: this.callbackURL,
+        scope: oauth2Scope,
+        state,
+      },
+    }))
+  }
+
+  getRedirect (url: string): string {
+    const u = new URL(url)
+
+    // In case someone started the flow on a callback route, default to the root
+    // of the webapp.
+    if (this.isCallback(u.pathname)) {
+      u.pathname = ''
+      u.search = ''
+      u.hash = ''
+    }
+
+    return u.toString()
+  }
+
+  isCallback (url: string): boolean {
+    return /\/auth\/callback$/.test(url)
+  }
+
+  /**
+   * protects against too many tries when we try to auto-fix the "state does not match" error
+   * by restarting the aut flow.
+   */
+  private incFlowCounter (): void {
+    const aux = this.sessionStorage.getItem(storeKeyFlowStarted)
+    if (aux === null) {
+      this.sessionStorage.setItem(storeKeyFlowStarted, '1')
+      return
+    }
+
+    const count = parseInt(this.sessionStorage.getItem(storeKeyFlowStarted) as string)
+    if (count >= maxStartAttempts) {
+      // Too many start attempts
+      this.sessionStorage.removeItem(storeKeyFlowStarted)
+      throw new Error('could not start authentication flow, too many attempts')
+    }
+
+    this.sessionStorage.setItem(
+      storeKeyFlowStarted,
+      (count + 1).toString(),
+    )
+  }
+
+  startAutoLogout (): Promise<number> {
+    const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || ''
     return this.exchangeRefresh(tkn).then(() => {
       if (this.refreshTimeout) {
         window.clearTimeout(this.refreshTimeout)
       }
+
       return this.expiresIn
     }).catch((err) => {
-      this.getLogger().error('refresh token exchange failed', err)
+      this.log.error('refresh token exchange failed', err)
       throw err
     })
   }
 
-  public stopAutoLogout(): Promise<AuthInfo | null> {
-    const tkn = window.sessionStorage.getItem(storeKeyRefreshToken) || ''
+  stopAutoLogout (): Promise<AuthInfo | null> {
+    const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || ''
     return this.exchangeRefresh(tkn).catch((err) => {
-      this.getLogger().error('refresh token exchange failed', err)
+      this.log.error('refresh token exchange failed', err)
       throw err
     })
   }
 
-  // Simplified getters that return pre-created computed refs
-  public get accessTokenFn() {
-    return () => this.accessToken.value
+  /**
+   * Exchanges authorization code for access and refresh tokens
+   */
+  private async exchangeCode (code = ''): Promise<AuthInfo> {
+    return this.oauth2token({
+      code,
+      scope: oauth2Scope,
+      redirect_uri: this.callbackURL,
+    }).then((oa2tr) => this.procTokenResponse(oa2tr))
+  }
+
+  /**
+   * Exchanges refresh token for new access and new refresh token
+   *
+   * After successful token exchange, we call response processing function
+   * to update internals & stored values
+   *
+   * @param refreshToken
+   */
+  private async exchangeRefresh (refreshToken: string): Promise<AuthInfo | null> {
+    /**
+     * Finalize
+     */
+    this.completeFinalState()
+
+    return this.oauth2token({
+      refresh_token: refreshToken || '',
+    }).then((oa2tr) => this.procTokenResponse(oa2tr))
+      .catch((err) => {
+        const { response: { data: { error = undefined } = {} } = {} } = err
+        if (error === 'invalid_grant') {
+          this.pruneStore()
+          throw new Error('Unauthenticated')
+        }
+        throw err
+      })
+  }
+
+  /**
+   * Processes fetched token and stores it
+   *
+   * Access token is stored only to instance of this object
+   * Refresh token is stored only to local store
+   *
+   * @param oa2tkn OAuth2 token response
+   * @private
+   */
+  private procTokenResponse (oa2tkn: OAuth2TokenResponse): AuthInfo {
+    this.log.debug('new token', oa2tkn)
+
+    if (this.refreshTimeout) {
+      window.clearTimeout(this.refreshTimeout)
+    }
+
+    this.expiresIn = oa2tkn.expires_in
+
+    const timeout = this.expiresIn * this.refreshFactor
+
+    this.log.debug('setting up refresh timeout callback', {
+      expires_in: this.expiresIn,
+      timeout,
+    })
+
+    // Schedule next refresh
+    this.refreshTimeout = window.setTimeout(async () => {
+      const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || '';
+      await this.exchangeRefresh(tkn)
+        .catch((err) => {
+          this.log.error('refresh token exchange failed', err)
+          this.startAuthenticationFlow()
+        })
+    }, 1000 * timeout)
+
+    this.sessionStorage.setItem(storeKeyRefreshToken, oa2tkn.refresh_token)
+
+    const u = new system.User({
+      userID: oa2tkn.sub,
+      meta: {
+        preferredLanguage: oa2tkn.preferred_language || 'en',
+        avatarID: oa2tkn.avatarID,
+        theme: oa2tkn.theme,
+      },
+      ...oa2tkn,
+    })
+
+    this[accessToken] = oa2tkn.access_token
+    this[user] = u
+
+    if (this.$emit) {
+      this.$emit('auth-token-processed', {
+        user: u,
+        accessToken: this[accessToken],
+      })
+    }
+
+    return {
+      accessTokenFn: (): string | undefined => { return this[accessToken] },
+      user: u,
+    }
+  }
+
+  /**
+   * oauth2token exchanges authorization code or refresh token for (new) access token
+   *
+   * @param payload
+   * @private
+   */
+  private async oauth2token (payload: Record<string, string>): Promise<OAuth2TokenResponse> {
+    const data = new URLSearchParams()
+
+    this.log.debug('exchanging for token', payload)
+
+    Object.entries(payload).forEach(([key, value]) => {
+      data.set(key, value)
+    })
+
+    const config = {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    }
+
+    return this.axios.post(oauth2FlowURL, data, config).then(({ data }) => data)
+  }
+
+  private pruneStore (): void {
+    this[accessToken] = undefined
+    this[user] = undefined
+    this.sessionStorage.clear()
+  }
+
+  get accessToken (): string | undefined {
+    return this[accessToken]
+  }
+
+  get user (): system.User | undefined {
+    return this[user]
   }
 }
 
-export const AuthPlugin = {
-  install(app: App, options: AuthPluginOptions = {}) {
+// Vue 3 Plugin interface
+interface Auth2PluginOptions extends Partial<AuthCtor> {
+  rootApp?: boolean;
+}
+
+export default {
+  install(app: App, opts: Auth2PluginOptions = {}): void {
     let {
       app: appName = '',
       rootApp = false,
@@ -436,25 +676,48 @@ export const AuthPlugin = {
       verbose = undefined,
       refreshFactor = 0.75,
       entrypointURL = window.location.toString(),
-    } = options
+      location = window.location,
+      sessionStorage = window.sessionStorage,
+      registerEventListener = window.addEventListener.bind(window),
+    } = opts
 
-    // Auto-configure cortezaAuthURL from window variables
     if (!cortezaAuthURL) {
+      /**
+       * cortezaAuthURL not explicitly set, try to auto-configure from properties set on window variable
+       * (most likely through config.js)
+       */
+
       // @ts-ignore
       const { CortezaAPI = undefined, CortezaAuth = undefined } = window
 
-      if (CortezaAuth) {
-        cortezaAuthURL = CortezaAuth
-      } else if (CortezaAPI && /\/api$/.test(CortezaAPI)) {
-        cortezaAuthURL = CortezaAPI.replace('/api', '/auth')
-      } else if (CortezaAPI) {
-        cortezaAuthURL = CortezaAPI + '/auth'
-      } else {
-        throw new Error('failed to configure auth cortezaAuthURL')
+      switch (true) {
+        case !!CortezaAuth:
+          /**
+           * Corteza authentication endpoints location is set explicitly:
+           */
+          cortezaAuthURL = CortezaAuth
+          break
+        case !!CortezaAPI && /\/api$/.test(CortezaAPI):
+          /**
+           * Corteza API base-url is explicitly set and string ends with /api,
+           * do a leap of faith and replace it with /auth, so that
+           * corteza.example.tld/api becomes corteza.example.tld/auth
+           */
+          cortezaAuthURL = CortezaAPI.replace('/api', '/auth')
+          break
+        case !!CortezaAPI:
+          /**
+           * Corteza API base-url is explicitly set. Since it does not end with /api
+           * we will assume api is served directly on root of that domain and we'll just append the /auth suffix
+           * so that corteza.example.tld becomes corteza.example.tld/auth
+           */
+          cortezaAuthURL = CortezaAPI + '/auth'
+          break
+        default:
+          throw new Error('failed to configure auth cortezaAuthURL')
       }
     }
 
-    // Auto-configure callbackURL
     if (!callbackURL) {
       if (!appName) {
         throw new Error('can not construct callbackURL; specify \'callbackURL\' or \'app\' property')
@@ -465,7 +728,8 @@ export const AuthPlugin = {
       const callbackPath = 'auth/callback'
 
       if (CortezaWebapp) {
-        callbackURL = makeUrl(CortezaWebapp)
+        // construct redirect URL fallback from configured corteza webapp
+        callbackURL = Make({ url: `${CortezaWebapp}` })
       } else {
         // Try to get callbackURL from <base> tag's href value
         const baseTags = document.getElementsByTagName('base')
@@ -475,72 +739,56 @@ export const AuthPlugin = {
 
         if (!callbackURL) {
           // construct redirect URL fallback from current location
-          const { protocol, host } = window.location
+          // note: host contains port, hostname does not!
+          const { protocol, host } = location
           callbackURL = `${protocol}//${host}`
         }
       }
 
       if (!rootApp) {
-        callbackURL = makeUrl(callbackURL) + `/${appName}`
+        callbackURL = callbackURL.replace(/\/$/, '') + `/${appName}`
       }
 
-      callbackURL = makeUrl(callbackURL) + `/${callbackPath}`
+      callbackURL = callbackURL.replace(/\/$/, '') + `/${callbackPath}`
     }
 
-    // Auto-configure verbose mode
     if (verbose === undefined) {
-      verbose = window.location.hostname === 'localhost' ||
+      // enable debug (when not expl. disabled on localhost)
+      verbose = location.hostname === 'localhost' ||
         window.location.search.includes('verboseAuth') ||
         !!window.localStorage.getItem('auth.verbose') ||
         !!window.sessionStorage.getItem('auth.verbose')
     }
 
     if (verbose) {
-      console.debug('Auth plugin configuration:', {
+      console.debug({
         app: appName,
         verbose,
         cortezaAuthURL,
         callbackURL,
+        location,
+        sessionStorage,
         entrypointURL,
         refreshFactor,
       })
     }
 
-    // Create auth configuration
-    const authConfig = {
+    const authInstance = new Auth({
       app: appName,
       verbose,
       cortezaAuthURL,
       callbackURL,
+      location,
+      sessionStorage,
       entrypointURL,
       refreshFactor,
-    }
+      registerEventListener,
+    }).setupEmitter(app)
 
-    const authManager = new AuthManager(authConfig, (event: string, ...args: unknown[]) => {
-      // Emit events on the app instance
-      app.config.globalProperties.$emit?.(event, ...args)
-    })
+    // Vue 3 way: Add to globalProperties for Options API compatibility
+    app.config.globalProperties.$auth = authInstance
 
-    const auth = {
-      user: authManager.userRef,
-      accessToken: authManager.accessTokenRef,
-      accessTokenFn: authManager.accessTokenFn,
-      handle: authManager.handle.bind(authManager),
-      startAuthenticationFlow: authManager.startAuthenticationFlow.bind(authManager),
-      logout: authManager.logout.bind(authManager),
-      startAutoLogout: authManager.startAutoLogout.bind(authManager),
-      stopAutoLogout: authManager.stopAutoLogout.bind(authManager),
-    }
-
-    app.config.globalProperties.$auth = {
-      ...auth,
-      get cortezaAuthURL() { return cortezaAuthURL },
-      get callbackURL() { return callbackURL },
-      get entrypointURL() { return entrypointURL },
-      get app() { return appName },
-      get verbose() { return verbose },
-    }
-
-    app.provide('auth', auth)
+    // Vue 3 way: Provide for Composition API
+    app.provide('auth', authInstance)
   }
 }

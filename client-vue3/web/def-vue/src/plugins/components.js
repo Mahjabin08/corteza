@@ -7,47 +7,61 @@ import { setToastService } from '@cortezaproject/corteza-vue-next'
 import Menu from 'primevue/menu'
 import Button from 'primevue/button'
 import Toast from 'primevue/toast'
+import Ripple from 'primevue/ripple'
 
-const CortezaTheme = definePreset(Aura, {
-  semantic: {
-    primary: palette('#FF9661'),
-  },
-  extend: {
-    body: {
-      backgroundColor: 'var(--p-surface-0)',
+function getCortezaTheme({ variables = {} } = {}) {
+  const theme = definePreset(Aura, {
+    semantic: {
+      primary: palette(variables['primary']),
     },
-    topbar: {
-      backgroundColor: 'var(--p-surface-0)',
+    extend: {
+      body: {
+        backgroundColor: variables['body-bg'],
+      },
+      topbar: {
+        backgroundColor: variables['topbar-bg'],
+      },
+      sidebar: {
+        backgroundColor: variables['sidebar-bg'],
+      },
     },
-    sidebar: {
-      backgroundColor: 'var(--p-surface-0)',
-    },
-  },
-  css: ({ dt }) => `
-    body {
-      background-color: ${dt('body.backgroundColor')};
-    }
-  `,
-})
+    css: ({ dt }) => `
+      :root {
+        --topbar-height: 64px;
+        --topbar-bg: ${dt('topbar.backgroundColor')};
+        --sidebar-width: 320px;
+        --sidebar-bg: ${dt('sidebar.backgroundColor')};
+      }
+
+      body {
+        background-color: ${dt('body.backgroundColor')};
+      }
+    `,
+  })
+
+  return theme
+}
 
 export const PrimeVuePlugin = {
   install(app, options = {}) {
     // Configure PrimeVue with theme
     app.use(PrimeVue, {
       theme: {
-        preset: CortezaTheme,
+        preset: getCortezaTheme(options),
         options: {
           darkModeSelector: 'none',
           cssLayer: {
             name: 'primevue',
-            order: 'theme, base, primevue',
+            order: 'tailwind-base, primevue, tailwind-utilities'
           },
-        },
+        }
       },
+      ripple: true,
     })
 
     // Add Services
     app.use(ToastService)
+    app.use(Ripple)
 
     // Register components
     app.component('Button', Button)
