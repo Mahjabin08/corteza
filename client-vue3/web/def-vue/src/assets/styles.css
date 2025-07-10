@@ -1,7 +1,32 @@
+@import './fonts.css';
 @layer tailwind-base, primevue, tailwind-utilities;
 
 @layer tailwind-base {
   @tailwind base;
+
+  h1 {
+    @apply text-2xl font-bold;
+  }
+
+  h2 {
+    @apply text-xl font-bold;
+  }
+
+  h3 {
+    @apply text-lg font-bold;
+  }
+
+  h4 {
+    @apply text-base font-bold;
+  }
+
+  h5 {
+    @apply text-sm font-bold;
+  }
+
+  h6 {
+    @apply text-xs font-bold;
+  }
 }
 
 @layer tailwind-utilities {
@@ -11,9 +36,14 @@
 
 html {
   font-size: 14px;
+  line-height: normal;
 }
 
 body {
-  height: 100%;
+  margin: 0px;
+  min-height: 100%;
   font-family: 'Poppins', sans-serif;
+  font-weight: normal;
+  overflow-x: hidden;
+  overflow-y: auto;
 }

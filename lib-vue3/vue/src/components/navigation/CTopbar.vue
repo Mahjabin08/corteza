@@ -1,7 +1,18 @@
 <template>
-  <div class="p-2">
-    Test Topbar
+  <div
+    class="header-navigation flex flex-wrap items-center justify-between py-2 px-3 gap-2"
+  >
+    <div>Foo</div>
 
-    <Button label="Click Me" severity="primary" class="w-full" />
+    <div>Bar</div>
+
+    <div>Baz</div>
   </div>
 </template>
+
+<style scoped>
+.header-navigation {
+  min-height: var(--topbar-height);
+  background-color: var(--topbar-bg);
+}
+</style>

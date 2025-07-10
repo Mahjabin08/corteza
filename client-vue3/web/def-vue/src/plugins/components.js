@@ -1,13 +1,40 @@
-import PrimeVue from 'primevue/config'
+import { ToastPlugin } from '@cortezaproject/corteza-vue-next'
 import { definePreset, palette } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
-import ToastService from 'primevue/toastservice'
-import { setToastService } from '@cortezaproject/corteza-vue-next'
+import PrimeVue from 'primevue/config'
 
-import Menu from 'primevue/menu'
 import Button from 'primevue/button'
-import Toast from 'primevue/toast'
+import Checkbox from 'primevue/checkbox'
 import Ripple from 'primevue/ripple'
+import Select from 'primevue/select'
+import ToastService from 'primevue/toastservice'
+
+export const PrimeVuePlugin = {
+  install(app, options = {}) {
+    app.use(PrimeVue, {
+      theme: {
+        preset: getCortezaTheme(options),
+        options: {
+          darkModeSelector: 'none',
+          cssLayer: {
+            name: 'primevue',
+            order: 'tailwind-base, primevue, tailwind-utilities',
+          },
+        },
+      },
+      ripple: true,
+    })
+
+    app.directive('ripple', Ripple)
+
+    app.component('Button', Button)
+    app.component('Checkbox', Checkbox)
+    app.component('Select', Select)
+
+    app.use(ToastService)
+    app.use(ToastPlugin)
+  },
+}
 
 function getCortezaTheme({ variables = {} } = {}) {
   const theme = definePreset(Aura, {
@@ -40,38 +67,4 @@ function getCortezaTheme({ variables = {} } = {}) {
   })
 
   return theme
-}
-
-export const PrimeVuePlugin = {
-  install(app, options = {}) {
-    // Configure PrimeVue with theme
-    app.use(PrimeVue, {
-      theme: {
-        preset: getCortezaTheme(options),
-        options: {
-          darkModeSelector: 'none',
-          cssLayer: {
-            name: 'primevue',
-            order: 'tailwind-base, primevue, tailwind-utilities'
-          },
-        }
-      },
-      ripple: true,
-    })
-
-    // Add Services
-    app.use(ToastService)
-    app.use(Ripple)
-
-    // Register components
-    app.component('Button', Button)
-    app.component('Toast', Toast)
-    app.component('Menu', Menu)
-
-    // Set up toast service integration with Corteza
-    const toastService = app.config.globalProperties.$toast
-    if (toastService) {
-      setToastService(toastService)
-    }
-  }
 }

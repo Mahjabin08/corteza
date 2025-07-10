@@ -1,6 +1,5 @@
 .DS_Store
 .idea
-.vscode
 *.iml
 *.suo
 *.ntvs*
@@ -9,3 +8,4 @@
 *.sw*
 .run
 node_modules
+dist
