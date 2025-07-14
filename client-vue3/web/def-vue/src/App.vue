@@ -5,8 +5,6 @@
     </header>
 
     <main class="flex-1 overflow-hidden">
-      <Button icon="pi pi-question-circle" size="large" text class="text-color" />
-
       <RouterView />
     </main>
 
