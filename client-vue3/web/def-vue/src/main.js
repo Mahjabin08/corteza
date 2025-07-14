@@ -1,13 +1,11 @@
 import './config-check'
 
-import { createApp } from 'vue'
 import App from './App.vue'
-import './assets/styles.css'
 
-import { setupAndAuthenticate } from './plugins'
-
+import { createApp } from 'vue'
 const app = createApp(App)
 
+import { setupAndAuthenticate } from './plugins'
 setupAndAuthenticate(app).then(() => {
   app.mount('body')
 })

@@ -4,13 +4,13 @@ build:
 	@echo "---Building js---"
 	@(cd $(CURDIR)/js && yarn && yarn build) || (echo "Failed to build js"; exit 1)
 	@echo "---Building vue---"
-	@(cd $(CURDIR)/vue && yarn && yarn build) || (echo "Failed to build vue"; exit 1)
+	@(cd $(CURDIR)/vue && yarn) || (echo "Failed to build vue"; exit 1)
 
 dev: build
 	@echo "---Creating sym link for js---"
 	@(cd $(CURDIR)/js && yarn && yarn link && yarn build) || (echo "Failed to link js"; exit 1)
 	@echo "---Building vue and creating sym link---"
-	@(cd $(CURDIR)/vue && yarn && yarn cdeps && yarn build && yarn link) || (echo "Failed to process vue lib"; exit 1)
+	@(cd $(CURDIR)/vue && yarn && yarn cdeps && yarn link) || (echo "Failed to process vue lib"; exit 1)
 
 test: test-js test-vue
 
@@ -32,7 +32,7 @@ fresh:
 	@echo "---Fresh js---"
 	@(cd $(CURDIR)/js && rm -rf node_modules yarn.lock && yarn && yarn link && yarn build) || (echo "Failed to fresh js"; exit 1)
 	@echo "---Fresh vue---"
-	@(cd $(CURDIR)/vue && rm -rf node_modules yarn.lock && yarn && yarn cdeps && yarn build && yarn link) || (echo "Failed to fresh vue"; exit 1)
+	@(cd $(CURDIR)/vue && rm -rf node_modules yarn.lock && yarn && yarn cdeps && yarn link) || (echo "Failed to fresh vue"; exit 1)
 
 audit:
 	@echo "---Audit js---"

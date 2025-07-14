@@ -1,15 +1,23 @@
+import '@/assets/styles.css'
 import { ToastPlugin } from '@cortezaproject/corteza-vue-next'
 import { definePreset, palette } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
+import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import Menu from 'primevue/menu'
 import Ripple from 'primevue/ripple'
 import Select from 'primevue/select'
+import TieredMenu from 'primevue/tieredmenu'
+
+import DialogService from 'primevue/dialogservice'
 import ToastService from 'primevue/toastservice'
 
-export const PrimeVuePlugin = {
+import PortalVue from 'portal-vue'
+
+export const UIPlugin = {
   install(app, options = {}) {
     app.use(PrimeVue, {
       theme: {
@@ -30,9 +38,15 @@ export const PrimeVuePlugin = {
     app.component('Button', Button)
     app.component('Checkbox', Checkbox)
     app.component('Select', Select)
+    app.component('Menu', Menu)
+    app.component('TieredMenu', TieredMenu)
 
     app.use(ToastService)
+    app.use(DialogService)
+
+    // Other non PrimeVue plugins
     app.use(ToastPlugin)
+    app.use(PortalVue)
   },
 }
 
