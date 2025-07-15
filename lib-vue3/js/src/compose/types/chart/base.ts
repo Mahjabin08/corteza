@@ -43,7 +43,7 @@ export class BaseChart {
 
   public config: ChartConfig = {}
 
-  constructor (def: PartialChart = {}) {
+  constructor(def: PartialChart = {}) {
     this.merge(def)
   }
 
@@ -58,13 +58,13 @@ export class BaseChart {
    * @param data Array of values in the given data set
    * @param m Metric for the given dataset
    */
-  datasetPostProc (data: Array<number|TemporalDataPoint>, m: Metric): Array<number|TemporalDataPoint> {
+  datasetPostProc(data: Array<number|TemporalDataPoint>, m: Metric): Array<number|TemporalDataPoint> {
     // Define a valid function to evaluate
     let fxRaw = (m.fx || defaultFx).trim()
     if (!fxRaw.startsWith('return')) {
       fxRaw = 'return ' + fxRaw
     }
-    // eslint-disable-next-line no-new-func
+     
     const fx = new Function('n', 'm', 'r', fxRaw)
 
     // Define a new array, so we don't alter the original one.
@@ -101,7 +101,7 @@ export class BaseChart {
     return data
   }
 
-  merge (c: PartialChart) {
+  merge(c: PartialChart) {
     let conf = { ...(c.config || {}) }
     Apply(this, c, CortezaID, 'chartID', 'namespaceID')
     Apply(this, c, String, 'name', 'handle')
@@ -144,7 +144,7 @@ export class BaseChart {
    * Validates dimensions and metrics.
    * If invalid it throws an error.
    */
-  isValid () {
+  isValid() {
     if (!this.config.reports || !this.config.reports.length) {
       throw new Error('notification.chart.invalidConfig.missingReports')
     }
@@ -168,7 +168,7 @@ export class BaseChart {
    * Checks validity of dimensions.
    * If invalid it throws an error
    */
-  dimCheck ({ field, modifier }: Dimension) {
+  dimCheck({ field, modifier }: Dimension) {
     if (!field) {
       throw new Error('notification.chart.invalidConfig.missingDimensionsField')
     }
@@ -181,7 +181,7 @@ export class BaseChart {
    * Checks validity of metrics.
    * If invalid it throws an error
    */
-  mtrCheck ({ field, aggregate, type }: Metric) {
+  mtrCheck({ field, aggregate, type }: Metric) {
     if (!field) {
       throw new Error('notification.chart.invalidConfig.missingMetricsField')
     }
@@ -196,7 +196,7 @@ export class BaseChart {
   /**
    * Prepares params that the reporter can use for querying.
    */
-  formatReporterParams ({ moduleID, metrics, dimensions, filter }: Report) {
+  formatReporterParams({ moduleID, metrics, dimensions, filter }: Report) {
     return {
       moduleID,
       filter,
@@ -213,7 +213,7 @@ export class BaseChart {
    * Fetcher reports defined in the given configuration with the help of the provided
    * reporter.
    */
-  async fetchReports ({ reporter }: { reporter(p: any): Promise<any> }) {
+  async fetchReports({ reporter }: { reporter(p: any): Promise<any> }) {
     const out: Array<any> = []
 
     // Prepare params & filter out invalid combos (formatReporterParams will return null on invalid params)
@@ -238,7 +238,7 @@ export class BaseChart {
    * * generate labels,
    * * creates dataset for the chart.
    */
-  private processReporterResults (results: Array<object> = [], report: Report): object {
+  private processReporterResults(results: Array<object> = [], report: Report): object {
     const dLabel = 'dimension_0'
     const { dimensions: [dimension] = [] } = report
     let labels: Array<string> = []
@@ -275,34 +275,34 @@ export class BaseChart {
     }
   }
 
-  processLabels (ll: Array<string>, d: Dimension) {
+  processLabels(ll: Array<string>, d: Dimension) {
     return ll
   }
 
-  makeDataset (m: Metric, d: Dimension, data: Array<number|any>, alias: string) {
+  makeDataset(m: Metric, d: Dimension, data: Array<number|any>, alias: string) {
     throw new Error('method.makeDataset.notImplemented')
   }
 
-  makeOptions (data?: any) {
+  makeOptions(data?: any) {
     throw new Error('method.makeOptions.notImplemented')
   }
 
-  plugins (mm: Array<Metric>) {
+  plugins(mm: Array<Metric>) {
     throw new Error('method.plugins.notImplemented')
   }
 
-  baseChartType (datasets: Array<any>) {
+  baseChartType(datasets: Array<any>) {
     throw new Error('method.baseChartType.notImplemented')
   }
 
   /**
    * Performs chart export; used by exporter feature.
    */
-  async export (findModuleByID: ({ namespaceID, moduleID }: { namespaceID: string; moduleID: string }) => Promise<any>) {
+  async export(findModuleByID: ({ namespaceID, moduleID }: { namespaceID: string; moduleID: string }) => Promise<any>) {
     const { namespaceID } = this
     const copy = new BaseChart(this)
     if (copy.config?.reports) {
-      await Promise.all(copy.config.reports.map(async (r: any) => {
+      await Promise.all(copy.config.reports.map(async(r: any) => {
         const { moduleID } = r
         if (moduleID) {
           const module = await findModuleByID({ namespaceID, moduleID })
@@ -321,7 +321,7 @@ export class BaseChart {
   /**
    * Performs import; used by importer feature
    */
-  import (getModuleID: (moduleID: string) => string) {
+  import(getModuleID: (moduleID: string) => string) {
     const copy = new BaseChart(this)
     copy.config.reports = copy.config?.reports?.map(r => {
       const { moduleID } = r
@@ -333,7 +333,7 @@ export class BaseChart {
     return copy
   }
 
-  defDimension (): Dimension {
+  defDimension(): Dimension {
     return Object.assign({}, {
       conditions: {},
       meta: {},
@@ -341,13 +341,13 @@ export class BaseChart {
     })
   }
 
-  defMetric (): Metric {
+  defMetric(): Metric {
     return Object.assign({}, {
       formatting: defFormatData(),
     })
   }
 
-  defReport (): Report {
+  defReport(): Report {
     return Object.assign({}, {
       moduleID: undefined,
       filter: '',
@@ -383,7 +383,7 @@ export class BaseChart {
     })
   }
 
-  defConfig (): ChartConfig {
+  defConfig(): ChartConfig {
     return Object.assign({}, {
       colorScheme: '',
       reports: [this.defReport()],
@@ -398,11 +398,11 @@ export class BaseChart {
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'compose:chart'
   }
 
-  clone (): BaseChart {
+  clone(): BaseChart {
     return new BaseChart(JSON.parse(JSON.stringify(this)))
   }
 }

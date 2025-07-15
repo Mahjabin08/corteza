@@ -81,12 +81,12 @@ export class PageBlockProgress extends PageBlock {
 
   options: Options = { ...defaults }
 
-  constructor (i?: PageBlockInput) {
+  constructor(i?: PageBlockInput) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
 
     Apply(this.options, o, Number, 'refreshRate')
@@ -113,7 +113,7 @@ export class PageBlockProgress extends PageBlock {
   /**
    * Helper function to fetch and parse reporter's reports.
    */
-  fetch (additionalOptions: Options, api: ComposeAPI, namespaceID: string): Promise<object> {
+  fetch(additionalOptions: Options, api: ComposeAPI, namespaceID: string): Promise<object> {
     const reports = []
     const dimensions = dimensionFunctions.convert({ modifier: 'YEAR', field: 'createdAt' })
 

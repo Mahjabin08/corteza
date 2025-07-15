@@ -93,12 +93,12 @@ export class PageBlockMetric extends PageBlock {
 
   options: Options = { ...defaults }
 
-  constructor (i?: PageBlockInput) {
+  constructor(i?: PageBlockInput) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
     Apply(this.options, o, Number, 'refreshRate')
     Apply(this.options, o, Boolean, 'showRefresh')
@@ -111,7 +111,7 @@ export class PageBlockMetric extends PageBlock {
   /**
    * Helper function to fetch and parse reporter's reports.
    */
-  async fetch ({ m }: { m: Metric }, reporter: Reporter): Promise<object> {
+  async fetch({ m }: { m: Metric }, reporter: Reporter): Promise<object> {
     const w = await reporter(this.formatParams(m))
     const datasets = w.map((r: any) => r.rp !== undefined ? r.rp : r.count)
 
@@ -127,7 +127,7 @@ export class PageBlockMetric extends PageBlock {
     }
 
     if (m.transformFx) {
-      // eslint-disable-next-line no-new-func
+       
       rtr = (new Function('v', `return ${m.transformFx}`))(rtr)
     }
 
@@ -137,7 +137,7 @@ export class PageBlockMetric extends PageBlock {
   /**
    * Helper to construct reporter's params
    */
-  private formatParams ({ moduleID, filter, metricField, operation = '' }: Metric): ReporterParams {
+  private formatParams({ moduleID, filter, metricField, operation = '' }: Metric): ReporterParams {
     let metrics = ''
 
     if (operation && metricField && metricField !== 'count') {
@@ -153,7 +153,7 @@ export class PageBlockMetric extends PageBlock {
     }
   }
 
-  makeMetric () {
+  makeMetric() {
     return merge({}, defaultMetric)
   }
 }

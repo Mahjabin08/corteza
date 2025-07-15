@@ -32,6 +32,7 @@ export class Settings {
 
       return response
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to fetch settings:', error)
       throw error
     }
@@ -70,19 +71,19 @@ export class Settings {
       if (match) {
         const attachmentID = match[1]
 
-        return this.api.baseURL +
+        return (
+          this.api.baseURL +
           this.api.attachmentOriginalEndpoint({
             attachmentID,
             kind: 'settings',
             name: k,
           })
+        )
       }
     }
 
     if (src) {
-      return this.api.baseURL
-        .replace(/\/system$/, '')
-        .replace(/\/api$/, '') + src
+      return this.api.baseURL.replace(/\/system$/, '').replace(/\/api$/, '') + src
     }
 
     return d
@@ -102,10 +103,12 @@ export const SettingsPlugin = {
 
       app.provide('settings', settings)
 
+      // eslint-disable-next-line no-console
       console.log('Settings plugin configured successfully')
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to install Settings plugin:', error)
       throw error
     }
-  }
+  },
 }

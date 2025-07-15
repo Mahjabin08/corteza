@@ -65,12 +65,12 @@ export class PageBlockCalendar extends PageBlock {
     reminder: 'system:reminder',
   })
 
-  constructor (i?: PageBlock | Partial<PageBlock>) {
+  constructor(i?: PageBlock | Partial<PageBlock>) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
     Apply(this.options, o, Number, 'refreshRate')
 
@@ -94,7 +94,7 @@ export class PageBlockCalendar extends PageBlock {
    * Generates a header object of fullcalendar
    * @returns {Object}
    */
-  getHeader (): Header|undefined {
+  getHeader(): Header|undefined {
     const h = this.options.header
     if (h.hide) {
       return
@@ -119,7 +119,7 @@ export class PageBlockCalendar extends PageBlock {
    * @note When adding new ones, make sure included plugins support it.
    * @returns {Array}
    */
-  static availableViews (): Array<string> {
+  static availableViews(): Array<string> {
     return [
       'dayGridMonth',
       'timeGridWeek',
@@ -132,7 +132,7 @@ export class PageBlockCalendar extends PageBlock {
    * Reorder views according to available views array order.
    * @param {Array} views Array of views to filter & sort
    */
-  reorderViews (views: string[] = []): Array<string> {
+  reorderViews(views: string[] = []): Array<string> {
     return PageBlockCalendar.availableViews()
       .filter(v => views.find(fv => fv === v))
       .map(v => v)
@@ -143,7 +143,7 @@ export class PageBlockCalendar extends PageBlock {
    * @note It wil preserve fields that don't need to/can't be converted
    * @param {string} views converted view name
    */
-  static handleLegacyView (views = 'dayGridMonth'): string {
+  static handleLegacyView(views = 'dayGridMonth'): string {
     return legacyViewMapping[views] || views
   }
 
@@ -152,11 +152,11 @@ export class PageBlockCalendar extends PageBlock {
    * @note It wil preserve fields that don't need to/can't be converted
    * @param {string[]} views converted view names
    */
-  static handleLegacyViews (views: string[]): string[] {
+  static handleLegacyViews(views: string[]): string[] {
     return views.map(v => legacyViewMapping[v] || v)
   }
 
-  static makeFeed (f?: FeedInput): Feed {
+  static makeFeed(f?: FeedInput): Feed {
     return new Feed(f)
   }
 

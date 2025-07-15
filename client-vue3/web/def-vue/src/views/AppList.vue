@@ -1,12 +1,23 @@
 <template>
+  <!-- Loading overlay -->
+  <div v-if="loading" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+    <img
+      v-if="logoUrl"
+      :src="logoUrl"
+      class="max-h-lg max-w-xl w-auto animate-pulse"
+      alt="Loading..."
+    />
+  </div>
+
   <div class="app-selector flex flex-col h-full py-4 gap-3">
     <div class="flex flex-col justify-center items-center mx-4 my-4">
       <img v-if="logoUrl" :src="logoUrl" class="px-4 max-h-lg max-w-xl w-auto mb-6" alt="Logo" />
 
-      <IconField class="w-full max-w-2xl mx-auto">
-        <InputText v-model="query" :placeholder="'Search applications...'" class="w-full" />
-        <InputIcon :class="getSearchIconClass()" @click="query = ''" />
-      </IconField>
+      <CInputSearch
+        v-model="query"
+        placeholder="Search applications..."
+        class="w-full max-w-2xl mx-auto"
+      />
     </div>
 
     <div v-if="filteredApps.length" class="flex-1 overflow-auto">
@@ -46,78 +57,65 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { useApplicationsStore } from '@/stores/applications'
-import InputText from 'primevue/inputtext'
+import { components } from '@cortezaproject/corteza-vue-next'
+import { computed, getCurrentInstance, onMounted, ref } from 'vue'
+const { CInputSearch } = components
 
-export default {
-  name: 'AppList',
+const query = ref('')
+const loading = ref(true)
+const applicationsStore = useApplicationsStore()
 
-  components: {
-    InputText,
-  },
+const instance = getCurrentInstance()
+const $Settings = instance.appContext.config.globalProperties.$Settings
+const $SystemAPI = instance.appContext.config.globalProperties.$SystemAPI
 
-  data() {
-    return {
-      query: '',
-      applicationsStore: useApplicationsStore(),
-    }
-  },
+const apps = computed(() => {
+  return applicationsStore.unifyOnly
+})
 
-  computed: {
-    apps() {
-      return this.applicationsStore.unifyOnly
-    },
+const filteredApps = computed(() => {
+  const queryValue = (query.value || '').toUpperCase()
+  return query.value
+    ? apps.value.filter(
+        app =>
+          (app.name?.toUpperCase() || '').includes(queryValue) ||
+          (app.unify?.name?.toUpperCase() || '').includes(queryValue),
+      )
+    : apps.value
+})
 
-    filteredApps() {
-      const query = (this.query || '').toUpperCase()
-      return this.query
-        ? this.apps.filter(
-            (app) =>
-              (app.name?.toUpperCase() || '').includes(query) ||
-              (app.unify?.name?.toUpperCase() || '').includes(query),
-          )
-        : this.apps
-    },
+const logoUrl = computed(() => {
+  return $Settings.attachment('ui.mainLogo')
+})
 
-    logoUrl() {
-      // Get logo using Settings attachment helper - same as original Layout.vue
-      return this.$Settings.attachment('ui.mainLogo')
-    },
-  },
+const getAppLogoUrl = app => {
+  if (!app.unify?.logo) {
+    return 'applications/default-app.png'
+  }
 
-  async created() {
-    await this.applicationsStore.fetchApplications()
-  },
+  const apiSystem = '/api/system'
+  const apiBaseUrl = new URL($SystemAPI.baseURL).toString()
 
-  methods: {
-    getAppLogoUrl(app) {
-      if (!app.unify?.logo) {
-        return 'applications/default-app.png'
-      }
+  if (app.unify.logo.startsWith(apiSystem)) {
+    return apiBaseUrl.substring(0, apiBaseUrl.length - apiSystem.length) + app.unify.logo
+  }
 
-      const apiSystem = '/api/system'
-      const apiBaseUrl = new URL(this.$SystemAPI.baseURL).toString()
-
-      // Handle uploaded logos
-      if (app.unify.logo.startsWith(apiSystem)) {
-        return apiBaseUrl.substring(0, apiBaseUrl.length - apiSystem.length) + app.unify.logo
-      }
-
-      // Provisioned app logos
-      return app.unify.logo
-    },
-
-    getAppTarget(app) {
-      if (!app.enabled) return '_self'
-      return app.unify.url?.includes('jitsi') ? '_blank' : '_self'
-    },
-
-    getSearchIconClass() {
-      return !this.query
-        ? 'pi pi-search text-primary'
-        : 'pi pi-times cursor-pointer hover:text-primary'
-    },
-  },
+  return app.unify.logo
 }
+
+const getAppTarget = app => {
+  if (!app.enabled) return '_self'
+  return app.unify.url?.includes('jitsi') ? '_blank' : '_self'
+}
+
+onMounted(() => {
+  const fetchPromise = applicationsStore.fetchApplications()
+  const delayPromise = new Promise(resolve => setTimeout(resolve, 2000))
+
+  Promise.all([fetchPromise, delayPromise]).finally(() => {
+    loading.value = false
+  })
+})
 </script>

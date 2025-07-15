@@ -35,12 +35,12 @@ export class PageBlockRecordRevisions extends PageBlock {
 
   options: Options = { ...defaults }
 
-  constructor (i?: PageBlockInput) {
+  constructor(i?: PageBlockInput) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
 
     Apply(this.options, o, Boolean, 'preload', 'showRefresh')
@@ -68,7 +68,7 @@ export class PageBlockRecordRevisions extends PageBlock {
    * @param api Compose API to be used
    * @param record Record to fetch revisions for
    */
-  async fetch (api: ComposeAPI, record: Record): Promise<Array<Revision>> {
+  async fetch(api: ComposeAPI, record: Record): Promise<Array<Revision>> {
     const { namespaceID, moduleID, recordID } = record
 
     return api

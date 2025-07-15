@@ -97,11 +97,11 @@ export class DalConnection {
   public canDeleteConnection = false
   public canManageDalConfig = false
 
-  constructor (dc?: PartialDalConnection) {
+  constructor(dc?: PartialDalConnection) {
     this.apply(dc)
   }
 
-  apply (dc?: PartialDalConnection): void {
+  apply(dc?: PartialDalConnection): void {
     Apply(this, dc, CortezaID, 'connectionID')
     Apply(this, dc, String, 'handle', 'type')
     Apply(this, dc, ISO8601Date, 'createdAt', 'updatedAt', 'deletedAt')
@@ -149,7 +149,7 @@ export class DalConnection {
     }
   }
 
-  clone (): DalConnection {
+  clone(): DalConnection {
     return new DalConnection(JSON.parse(JSON.stringify(this)))
   }
 }

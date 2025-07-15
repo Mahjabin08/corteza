@@ -17,11 +17,11 @@ export class DisplayElement {
 
   kind = ''
 
-  constructor (de: PartialDisplayElement = {}) {
+  constructor(de: PartialDisplayElement = {}) {
     this.apply(de)
   }
 
-  apply (de?: DisplayElement | PartialDisplayElement): void {
+  apply(de?: DisplayElement | PartialDisplayElement): void {
     if (!de) return
 
     Apply(this, de, String, 'name', 'description')

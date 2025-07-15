@@ -112,12 +112,12 @@ interface PartialModule extends Partial<Omit<Module, 'fields' | 'meta' | 'labels
 }
 
 export class Module {
-  public moduleID = NoID;
-  public namespaceID = NoID;
-  public name = '';
-  public handle = '';
-  public fields: Array<ModuleField> = [];
-  public issues: Array<string> = [];
+  public moduleID = NoID
+  public namespaceID = NoID
+  public name = ''
+  public handle = ''
+  public fields: Array<ModuleField> = []
+  public issues: Array<string> = []
 
   public config: Partial<Config> = {
     dal: {
@@ -186,23 +186,23 @@ export class Module {
         fields: [],
       },
     },
-  };
+  }
 
-  public labels: object = {};
+  public labels: object = {}
 
-  public createdAt?: Date = undefined;
-  public updatedAt?: Date = undefined;
-  public deletedAt?: Date = undefined;
+  public createdAt?: Date = undefined
+  public updatedAt?: Date = undefined
+  public deletedAt?: Date = undefined
 
-  public canUpdateModule = false;
-  public canDeleteModule = false;
-  public canCreateRecord = false;
-  public canCreateOwnedRecord = false;
-  public canGrant = false;
+  public canUpdateModule = false
+  public canDeleteModule = false
+  public canCreateRecord = false
+  public canCreateOwnedRecord = false
+  public canGrant = false
 
   private [propNamespace]?: Namespace
 
-  constructor (i?: PartialModule, ns?: Namespace) {
+  constructor(i?: PartialModule, ns?: Namespace) {
     if (ns) {
       this.namespace = ns
     }
@@ -210,11 +210,11 @@ export class Module {
     this.apply(i)
   }
 
-  clone (): Module {
+  clone(): Module {
     return new Module(JSON.parse(JSON.stringify(this)), this.namespace)
   }
 
-  apply (m?: PartialModule): void {
+  apply(m?: PartialModule): void {
     if (!m) return
 
     if (this.namespace && m.namespaceID && m.namespaceID !== this.namespace.namespaceID) {
@@ -269,22 +269,22 @@ export class Module {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.moduleID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'compose:module'
   }
 
-  public get namespace (): Namespace {
+  public get namespace(): Namespace {
     return this[propNamespace] as Namespace
   }
 
-  public set namespace (ns: Namespace) {
+  public set namespace(ns: Namespace) {
     if (this[propNamespace]) {
       if ((this[propNamespace] as Namespace).namespaceID !== ns.namespaceID) {
         throw new Error('namespace for this module already set')
@@ -306,7 +306,7 @@ export class Module {
   /**
    * Returns fields from module, filtered and order as requested
    */
-  filterFields (requested?: string[] | Array<ModuleField>): Array<ModuleField> {
+  filterFields(requested?: string[] | Array<ModuleField>): Array<ModuleField> {
     if (!requested || requested.length === 0) {
       return []
     }
@@ -333,24 +333,24 @@ export class Module {
     return out
   }
 
-  public findField (name: string): ModuleField|undefined {
+  public findField(name: string): ModuleField|undefined {
     const r = this.filterFields([name])
     return r && r.length > 0 ? r[0] : undefined
   }
 
-  fieldNames (): readonly string[] {
+  fieldNames(): readonly string[] {
     return this.fields.map(f => f.name)
   }
 
-  systemFields (): readonly ModuleField[] {
+  systemFields(): readonly ModuleField[] {
     return systemFields
   }
 
-  export (): Module {
+  export(): Module {
     return this
   }
 
-  import (): Module {
+  import(): Module {
     return this
   }
 }

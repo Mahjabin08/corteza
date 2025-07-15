@@ -41,12 +41,12 @@ export class PageBlockChart extends PageBlock {
 
   options: Options = { ...defaults }
 
-  constructor (i?: PageBlockInput) {
+  constructor(i?: PageBlockInput) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
 
     o.chartID = o.chartID === NoID ? '' : o.chartID
@@ -60,7 +60,7 @@ export class PageBlockChart extends PageBlock {
     }
   }
 
-  resetDrillDown (): void {
+  resetDrillDown(): void {
     this.options.drillDown = cloneDeep(defaults.drillDown)
   }
 }

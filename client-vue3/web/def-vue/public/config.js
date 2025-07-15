@@ -5,4 +5,4 @@ window.CortezaAPI = 'http://localhost:1042/api'
 // window.CortezaAuth = 'http://localhost:18080/auth';
 
 // Set to true to enable i18next-pseudo
-window.i18nPseudoModeEnabled = false 
+window.i18nPseudoModeEnabled = false

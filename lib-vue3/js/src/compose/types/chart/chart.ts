@@ -14,13 +14,13 @@ import { getColorschemeColors } from '../../../shared'
  */
 export default class Chart extends BaseChart {
   // Generic charts (at the moment) support only 1 report per chart
-  async fetchReports (a: any) {
+  async fetchReports(a: any) {
     return super.fetchReports(a).then((rr: any) => {
       return rr[0]
     })
   }
 
-  makeDataset (m: Metric, d: Dimension, data: Array<number|TemporalDataPoint>, alias: string) {
+  makeDataset(m: Metric, d: Dimension, data: Array<number|TemporalDataPoint>, alias: string) {
     data = this.datasetPostProc(data, m)
 
     return {
@@ -41,7 +41,7 @@ export default class Chart extends BaseChart {
     }
   }
 
-  makeOptions (data: any): any {
+  makeOptions(data: any): any {
     const { reports = [], colorScheme, noAnimation = false, toolbox } = this.config
     const { saveAsImage, timeline = '' } = toolbox || {}
 
@@ -359,7 +359,7 @@ export default class Chart extends BaseChart {
     }
   }
 
-  defMetric (): Metric {
+  defMetric(): Metric {
     return Object.assign(super.defMetric(), {
       smooth: true,
       fill: false,
@@ -368,7 +368,7 @@ export default class Chart extends BaseChart {
     })
   }
 
-  baseChartType (datasets: Array<any>): string {
+  baseChartType(datasets: Array<any>): string {
     return datasets[0].type
   }
 }

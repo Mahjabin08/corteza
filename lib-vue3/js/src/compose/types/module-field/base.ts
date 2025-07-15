@@ -115,11 +115,11 @@ export class ModuleField {
   public canUpdateRecordValue = false
   public canReadRecordValue = false
 
-  constructor (f?: Partial<ModuleField>) {
+  constructor(f?: Partial<ModuleField>) {
     this.apply(f)
   }
 
-  applyOptions (o?: Partial<Options>): void {
+  applyOptions(o?: Partial<Options>): void {
     if (!o) return
 
     if (o.description) {
@@ -141,11 +141,11 @@ export class ModuleField {
     }
   }
 
-  clone (): ModuleField {
+  clone(): ModuleField {
     return new ModuleField(JSON.parse(JSON.stringify(this)))
   }
 
-  public apply (f?: Partial<ModuleField>): void {
+  public apply(f?: Partial<ModuleField>): void {
     if (!f) return
 
     Apply(this, f, CortezaID, 'fieldID')
@@ -204,14 +204,14 @@ export class ModuleField {
    *
    * Expecting valid name
    */
-  public get isValid (): boolean {
+  public get isValid(): boolean {
     return this.name.length > 0 && FieldNameValidator.test(this.name)
   }
 
   /**
    * Per module field type capabilities
    */
-  public get cap (): Readonly<Capabilities> {
+  public get cap(): Readonly<Capabilities> {
     return {
       configurable: true,
       multi: true,
@@ -224,14 +224,14 @@ export class ModuleField {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.fieldID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'compose:module-field'
   }
 }

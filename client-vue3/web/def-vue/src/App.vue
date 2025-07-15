@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="h-screen flex flex-col">
+  <div class="h-screen flex flex-col">
     <header>
       <CTopbar :settings="topbarSettings" :labels="topbarLabels" :hide-app-selector="true" />
     </header>
@@ -30,7 +30,6 @@ import { components } from '@cortezaproject/corteza-vue-next'
 import Toast from 'primevue/toast'
 import { computed, inject, ref } from 'vue'
 import { RouterView } from 'vue-router'
-
 const { CTopbar } = components
 
 const topbarSettings = ref({

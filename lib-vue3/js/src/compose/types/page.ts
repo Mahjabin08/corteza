@@ -33,23 +33,23 @@ interface PageConfig {
 }
 
 export class Page {
-  public pageID = NoID;
-  public selfID = NoID;
-  public moduleID = NoID;
-  public namespaceID = NoID;
+  public pageID = NoID
+  public selfID = NoID
+  public moduleID = NoID
+  public namespaceID = NoID
 
-  public title = '';
-  public handle = '';
-  public description = '';
-  public weight = 0;
+  public title = ''
+  public handle = ''
+  public description = ''
+  public weight = 0
 
   public labels: object = {}
 
-  public visible = false;
+  public visible = false
 
-  public children?: Page[];
+  public children?: Page[]
 
-  public blocks: PageBlock[] = [];
+  public blocks: PageBlock[] = []
 
   public config: PageConfig = {
     navItem: {
@@ -65,25 +65,25 @@ export class Page {
     notifications: {
       enabled: true,
     },
-  };
+  }
 
-  public createdAt?: Date = undefined;
-  public updatedAt?: Date = undefined;
-  public deletedAt?: Date = undefined;
+  public createdAt?: Date = undefined
+  public updatedAt?: Date = undefined
+  public deletedAt?: Date = undefined
 
-  public canUpdatePage = false;
-  public canDeletePage = false;
-  public canGrant = false;
+  public canUpdatePage = false
+  public canDeletePage = false
+  public canGrant = false
 
-  constructor (i?: PartialPage) {
+  constructor(i?: PartialPage) {
     this.apply(i)
   }
 
-  clone (): Page {
+  clone(): Page {
     return new Page(JSON.parse(JSON.stringify(this)))
   }
 
-  apply (i?: PartialPage): void {
+  apply(i?: PartialPage): void {
     if (!i) return
 
     Apply(this, i, CortezaID, 'pageID', 'selfID', 'moduleID', 'namespaceID')
@@ -125,29 +125,29 @@ export class Page {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.pageID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'compose:page'
   }
 
-  get isRecordPage (): boolean {
+  get isRecordPage(): boolean {
     return this.moduleID !== NoID
   }
 
-  get firstLevel (): boolean {
+  get firstLevel(): boolean {
     return this.selfID === NoID
   }
 
   /**
    * Validates page & it's blocks
    */
-  validate (): Array<string> {
+  validate(): Array<string> {
     const ee: Array<string> = []
 
     if (this.blocks.length === 0) {
@@ -161,7 +161,7 @@ export class Page {
     return ee
   }
 
-  export (): PartialPage {
+  export(): PartialPage {
     return {
       title: this.title,
       handle: this.handle,

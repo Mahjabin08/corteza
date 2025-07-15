@@ -1,5 +1,5 @@
-import type { App } from 'vue'
 import { apiClients } from '@cortezaproject/corteza-js-next'
+import type { App } from 'vue'
 
 interface Options {
   baseURL?: string

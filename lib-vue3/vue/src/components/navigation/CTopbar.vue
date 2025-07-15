@@ -1,9 +1,6 @@
 <template>
   <div class="header-navigation flex flex-wrap items-center py-2 px-3 gap-2">
-    <div
-      class="sidebar-spacer"
-      :class="{ block: sidebarExpanded, hidden: !sidebarExpanded }"
-    />
+    <div class="sidebar-spacer" :class="{ block: sidebarExpanded, hidden: !sidebarExpanded }" />
 
     <h2 class="title flex items-center pl-12 mb-0">
       <slot name="title" />
@@ -42,12 +39,7 @@
           @click="toggleHelpMenu"
         />
 
-        <Menu
-          ref="helpMenu"
-          :model="helpMenuItems"
-          :popup="true"
-          class="mt-2"
-        />
+        <Menu ref="helpMenu" :model="helpMenuItems" :popup="true" class="mt-2" />
       </div>
 
       <div v-if="!settings?.hideProfile" class="profile-dropdown">
@@ -69,7 +61,7 @@
 </template>
 
 <script setup>
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, ref, watch } from 'vue'
 
 const props = defineProps({
   sidebarExpanded: {
@@ -82,7 +74,7 @@ const props = defineProps({
   },
   appSelectorURL: {
     type: String,
-    default: "../",
+    default: '../',
   },
   settings: {
     type: Object,
@@ -92,186 +84,187 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-});
+})
 
-const auth = inject("auth");
+const auth = inject('auth')
 
-const helpMenuRef = ref();
-const helpMenu = ref();
-const profileMenuRef = ref();
-const profileMenu = ref();
-const currentTheme = ref("light");
+const helpMenuRef = ref()
+const helpMenu = ref()
+const profileMenuRef = ref()
+const profileMenu = ref()
+const currentTheme = ref('light')
 
 const documentationURL = computed(() => {
-  const [year, month] = VERSION.split(".");
-  return `https://docs.cortezaproject.org/corteza-docs/${year}.${month}/index.html`;
-});
+  // eslint-disable-next-line no-undef
+  const [year, month] = VERSION.split('.')
+  return `https://docs.cortezaproject.org/corteza-docs/${year}.${month}/index.html`
+})
 
 const helpLinks = computed(() => {
-  const { helpLinks = [] } = props.settings || {};
-  return (helpLinks || []).filter(({ handle, url }) => handle && url);
-});
+  const { helpLinks = [] } = props.settings || {}
+  return (helpLinks || []).filter(({ handle, url }) => handle && url)
+})
 
 const profileLinks = computed(() => {
-  const { profileLinks = [] } = props.settings || {};
-  return (profileLinks || []).filter(({ handle, url }) => handle && url);
-});
+  const { profileLinks = [] } = props.settings || {}
+  return (profileLinks || []).filter(({ handle, url }) => handle && url)
+})
 
 const buildVersion = computed(() => {
-  return VERSION;
-});
+  // eslint-disable-next-line no-undef
+  return VERSION
+})
 
 const themes = computed(() => [
   {
-    id: "light",
+    id: 'light',
     label: props.labels.lightTheme,
   },
   {
-    id: "dark",
+    id: 'dark',
     label: props.labels.darkTheme,
   },
-]);
+])
 
 const helpMenuItems = computed(() => {
-  const items = [];
+  const items = []
 
-  helpLinks.value.forEach((helpLink) => {
+  helpLinks.value.forEach(helpLink => {
     items.push({
       label: helpLink.handle,
       url: helpLink.url,
-      target: helpLink.newTab ? "_blank" : "",
-    });
-  });
+      target: helpLink.newTab ? '_blank' : '',
+    })
+  })
 
   if (!props.settings?.hideForumLink) {
     items.push({
       label: props.labels.helpForum,
-      url: "https://forum.cortezaproject.org/",
-      target: "_blank",
-    });
+      url: 'https://forum.cortezaproject.org/',
+      target: '_blank',
+    })
   }
 
   if (!props.settings?.hideDocumentationLink) {
     items.push({
       label: props.labels.helpDocumentation,
       url: documentationURL.value,
-      target: "_blank",
-    });
+      target: '_blank',
+    })
   }
 
   if (!props.settings?.hideFeedbackLink) {
     items.push({
       label: props.labels.helpFeedback,
-      url: "mailto:info@cortezaproject.org",
-      target: "_blank",
-    });
+      url: 'mailto:info@cortezaproject.org',
+      target: '_blank',
+    })
   }
 
   if (items.length > 0) {
-    items.push({ separator: true });
+    items.push({ separator: true })
   }
 
   items.push({
     label: buildVersion.value,
     disabled: true,
-    class: "text-sm",
-  });
+    class: 'text-sm',
+  })
 
-  return items;
-});
+  return items
+})
 
 const profileMenuItems = computed(() => {
-  const items = [];
+  const items = []
 
   items.push({
     label: props.labels.userSettingsLoggedInAs,
     disabled: true,
-    class: "text-sm text-muted-color",
-  });
+    class: 'text-sm text-muted-color',
+  })
 
-  profileLinks.value.forEach((profileLink) => {
+  profileLinks.value.forEach(profileLink => {
     items.push({
       label: profileLink.handle,
       url: profileLink.url,
-      target: profileLink.newTab ? "_blank" : "",
-    });
-  });
+      target: profileLink.newTab ? '_blank' : '',
+    })
+  })
 
   if (!props.settings?.hideProfileLink) {
     items.push({
       label: props.labels.userSettingsProfile,
       url: auth.cortezaAuthURL,
-      target: "_blank",
-    });
+      target: '_blank',
+    })
   }
 
   if (!props.settings?.hideChangePasswordLink) {
     items.push({
       label: props.labels.userSettingsChangePassword,
       url: `${auth.cortezaAuthURL}/change-password`,
-      target: "_blank",
-    });
+      target: '_blank',
+    })
   }
 
   if (!props.settings?.hideThemeSelector) {
     items.push({
-      label: "Theme",
-      items: themes.value.map((theme) => ({
+      label: 'Theme',
+      items: themes.value.map(theme => ({
         label: theme.label,
         disabled: currentTheme.value === theme.id,
         command: () => saveThemeMode(theme.id),
       })),
-    });
+    })
   }
 
-  items.push({ separator: true });
+  items.push({ separator: true })
 
   items.push({
     label: props.labels.userSettingsLogout,
     command: () => logout(),
-  });
+  })
 
-  return items;
-});
+  return items
+})
 
-const toggleHelpMenu = (event) => {
-  helpMenu.value.toggle(event);
-};
+const toggleHelpMenu = event => {
+  helpMenu.value.toggle(event)
+}
 
-const toggleProfileMenu = (event) => {
-  profileMenu.value.toggle(event);
-};
+const toggleProfileMenu = event => {
+  profileMenu.value.toggle(event)
+}
 
-const saveThemeMode = async (theme) => {
-  currentTheme.value = theme;
+const saveThemeMode = async theme => {
+  currentTheme.value = theme
 
   if (window.$auth?.user?.meta) {
-    window.$auth.user.meta.theme = theme;
+    window.$auth.user.meta.theme = theme
 
     try {
-      await window.$SystemAPI?.userUpdate(window.$auth.user);
-      document
-        .getElementsByTagName("html")[0]
-        .setAttribute("data-color-mode", theme);
+      await window.$SystemAPI?.userUpdate(window.$auth.user)
+      document.getElementsByTagName('html')[0].setAttribute('data-color-mode', theme)
     } catch (error) {
-      console.error(error);
+      // eslint-disable-next-line no-console
+      console.error(error)
     }
   }
-};
+}
 
 const logout = () => {
-  auth.logout();
-};
+  auth.logout()
+}
 
 watch(
   () => window.$auth?.user?.meta?.theme,
-  (theme) => {
+  theme => {
     if (theme) {
-      currentTheme.value = theme;
+      currentTheme.value = theme
     }
   },
-  { immediate: true }
-);
+  { immediate: true },
+)
 </script>
 
 <style scoped>

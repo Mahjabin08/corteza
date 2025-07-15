@@ -16,15 +16,22 @@ function getVersion() {
   }
 }
 
-export default defineConfig({
-  plugins: [vue(), vueDevTools()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  const isDevelopment = mode === 'development'
+
+  return {
+    // Set base URL - similar to publicPath in webpack
+    base: isDevelopment ? '/' : './',
+
+    plugins: [vue(), vueDevTools()],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
     },
-  },
-  define: {
-    VERSION: JSON.stringify(getVersion()),
-    BUILD_TIME: JSON.stringify(new Date().toISOString()),
-  },
+    define: {
+      VERSION: JSON.stringify(getVersion()),
+      BUILD_TIME: JSON.stringify(new Date().toISOString()),
+    },
+  }
 })

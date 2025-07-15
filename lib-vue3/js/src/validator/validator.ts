@@ -21,7 +21,7 @@ export class ValidatorError {
    */
   readonly meta: Meta = {}
 
-  constructor (i: string | { kind: string; message?: string; meta?: Meta }) {
+  constructor(i: string | { kind: string; message?: string; meta?: Meta }) {
     if (typeof i === 'string') {
       this.kind = i
       this.message = i
@@ -68,7 +68,7 @@ export type ValidatorResult =
   // boolean false or any of the rest will result in no error
   null | undefined | void
 
-export function NormalizeValidatorResults (...r: ValidatorResult[]): ValidatorError[] {
+export function NormalizeValidatorResults(...r: ValidatorResult[]): ValidatorError[] {
   const out: ValidatorError[] = []
 
   r.forEach(r => {
@@ -83,7 +83,7 @@ export function NormalizeValidatorResults (...r: ValidatorResult[]): ValidatorEr
       return
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+     
     if (r instanceof Validated) {
       out.push(...r.get())
       return
@@ -116,27 +116,27 @@ interface FilterValidatedFn {
 export class Validated {
   protected set: ValidatorError[] = []
 
-  constructor (...r: ValidatorResult[]) {
+  constructor(...r: ValidatorResult[]) {
     this.push(...r)
   }
 
-  public get (): ValidatorError[] {
+  public get(): ValidatorError[] {
     return this.set
   }
 
-  public get length (): number {
+  public get length(): number {
     return this.set.length
   }
 
-  public valid (): boolean {
+  public valid(): boolean {
     return this.length === 0
   }
 
-  public push (...r: ValidatorResult[]): void {
+  public push(...r: ValidatorResult[]): void {
     this.set.push(...NormalizeValidatorResults(...r))
   }
 
-  public applyMeta (meta: Meta): void {
+  public applyMeta(meta: Meta): void {
     this.set = this.set.map(r => {
       const appliedMeta = { ...r, meta: { ...r.meta, ...meta } }
 
@@ -148,7 +148,7 @@ export class Validated {
     })
   }
 
-  public filter (fn: FilterValidatedFn): Validated {
+  public filter(fn: FilterValidatedFn): Validated {
     return new Validated(this.set.filter(fn))
   }
 
@@ -160,7 +160,7 @@ export class Validated {
    * @param {string} key
    * @param {unknown} value
    */
-  public filterByMeta (key: string, value?: unknown): Validated {
+  public filterByMeta(key: string, value?: unknown): Validated {
     return this.filter(
       (err) => (value === undefined ? err.meta[key] !== undefined : err.meta[key] === value),
     )
@@ -171,7 +171,7 @@ export interface ValidatorFn<T> {
   (this: T, ...args: unknown[]): ValidatorResult;
 }
 
-export function IsEmpty (v: unknown): boolean {
+export function IsEmpty(v: unknown): boolean {
   if (!v || (IsOf(v, 'length') && v.length && v.length === 0)) {
     return true
   }
@@ -189,7 +189,7 @@ export function IsEmpty (v: unknown): boolean {
  * @param {string|string[]} v2 Value to compare to
  * @returns {boolean}
  */
-export function AreEqual (v1: string|string[], v2: string|string[]): boolean {
+export function AreEqual(v1: string|string[], v2: string|string[]): boolean {
   if (Array.isArray(v1)) {
     if (!Array.isArray(v2) || v1.length !== v2.length) {
       return false
@@ -212,17 +212,17 @@ export class Validator<T> {
    */
   protected registered: ValidatorFn<T>[] = []
 
-  constructor (...vfn: ValidatorFn<T>[]) {
+  constructor(...vfn: ValidatorFn<T>[]) {
     if (vfn) {
       this.registered.push(...vfn)
     }
   }
 
-  public push (...vfn: ValidatorFn<T>[]): void {
+  public push(...vfn: ValidatorFn<T>[]): void {
     this.registered.push(...vfn)
   }
 
-  public run (target: T, ...args: unknown[]): Validated {
+  public run(target: T, ...args: unknown[]): Validated {
     return new Validated(...this.registered.map(vfn => vfn.call(target, ...args)))
   }
 }

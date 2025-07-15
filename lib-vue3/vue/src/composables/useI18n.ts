@@ -1,6 +1,6 @@
-import { ref, computed } from 'vue'
-import { createI18n, useI18n as useVueI18n } from 'vue-i18n'
+import { computed, ref } from 'vue'
 import type { I18n, I18nOptions } from 'vue-i18n'
+import { createI18n, useI18n as useVueI18n } from 'vue-i18n'
 
 interface I18nConfig {
   app: string
@@ -17,7 +17,11 @@ interface I18nConfig {
 let i18nInstance: I18n | null = null
 const isLoaded = ref(false)
 
-async function loadTranslations(locale: string, app: string, baseURL: string): Promise<Record<string, any>> {
+async function loadTranslations(
+  locale: string,
+  app: string,
+  baseURL: string,
+): Promise<Record<string, any>> {
   try {
     const response = await fetch(`${baseURL}/locale/${locale}/${app}`)
     if (!response.ok) {
@@ -25,6 +29,7 @@ async function loadTranslations(locale: string, app: string, baseURL: string): P
     }
     return await response.json()
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.warn(`Error loading translations for ${locale}:`, error)
     return {}
   }
@@ -34,12 +39,7 @@ export function createI18nInstance(config: I18nConfig): I18n {
   const devMode = process.env.NODE_ENV !== 'production'
   const defNS = 'translation'
 
-  const {
-    lng,
-    fallbackLng = 'en',
-    fallbackNS = false,
-    pseudo = false,
-  } = config
+  const { lng, fallbackLng = 'en', fallbackNS = false, pseudo = false } = config
 
   let ns: Array<string> = []
   if (!Array.isArray(config.ns)) {
@@ -57,22 +57,26 @@ export function createI18nInstance(config: I18nConfig): I18n {
     config.baseURL = `${(window as any).CortezaAPI}/system`
   }
 
-  const isPseudo = devMode && (
-    !!pseudo ||
-    !!(window as any).i18nPseudoModeEnabled ||
-    window.location.search.indexOf('i18nPseudoModeEnabled') > -1
-  )
+  const isPseudo =
+    devMode &&
+    (!!pseudo ||
+      !!(window as any).i18nPseudoModeEnabled ||
+      window.location.search.indexOf('i18nPseudoModeEnabled') > -1)
 
   // Detect language using the same order as the old system
   let detectedLng = lng
   if (!detectedLng) {
     // Check querystring, localStorage, cookie, navigator
     const urlParams = new URLSearchParams(window.location.search)
-    detectedLng = urlParams.get('lng') || 
-                  localStorage.getItem('i18nextLng') || 
-                  document.cookie.split(';').find(c => c.trim().startsWith('i18nextLng='))?.split('=')[1] ||
-                  navigator.language.split('-')[0] ||
-                  'en'
+    detectedLng =
+      urlParams.get('lng') ||
+      localStorage.getItem('i18nextLng') ||
+      document.cookie
+        .split(';')
+        .find(c => c.trim().startsWith('i18nextLng='))
+        ?.split('=')[1] ||
+      navigator.language.split('-')[0] ||
+      'en'
   }
 
   const options: I18nOptions = {
@@ -86,7 +90,7 @@ export function createI18nInstance(config: I18nConfig): I18n {
 
   // Add pseudo transformation if enabled
   if (isPseudo) {
-    options.postTranslation = (translated) => {
+    options.postTranslation = translated => {
       if (typeof translated === 'string') {
         return `[${translated}]`
       }
@@ -106,7 +110,7 @@ export function createI18nInstance(config: I18nConfig): I18n {
 
   // Set moment locale if available
   if ((window as any).moment) {
-    (window as any).moment.locale(detectedLng)
+    ;(window as any).moment.locale(detectedLng)
   }
 
   // Cache language preference (same as old system)
@@ -127,15 +131,20 @@ export function useI18n() {
 
   // Provide i18next-like API for compatibility
   const i18next = {
-    language: computed(() => (i18nInstance!.global.locale as any).value || i18nInstance!.global.locale),
+    language: computed(
+      () => (i18nInstance!.global.locale as any).value || i18nInstance!.global.locale,
+    ),
     changeLanguage: async (lng: string) => {
-      if (typeof i18nInstance!.global.locale === 'object' && 'value' in i18nInstance!.global.locale) {
-        (i18nInstance!.global.locale as any).value = lng
+      if (
+        typeof i18nInstance!.global.locale === 'object' &&
+        'value' in i18nInstance!.global.locale
+      ) {
+        ;(i18nInstance!.global.locale as any).value = lng
       } else {
         i18nInstance!.global.locale = lng as any
       }
       if ((window as any).moment) {
-        (window as any).moment.locale(lng)
+        ;(window as any).moment.locale(lng)
       }
       localStorage.setItem('i18nextLng', lng)
       document.cookie = `i18nextLng=${lng}; path=/`
@@ -154,7 +163,7 @@ export function useI18n() {
         }
         checkLoaded()
       }
-    }
+    },
   }
 
   return {
@@ -169,4 +178,4 @@ export function installI18n(app: any, config: I18nConfig) {
   const i18n = createI18nInstance(config)
   app.use(i18n)
   return i18n
-} 
+}

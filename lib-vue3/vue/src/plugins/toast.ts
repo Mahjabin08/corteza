@@ -1,56 +1,55 @@
-import type { App } from "vue";
+import type { App } from 'vue'
 
 export const ToastPlugin = {
   install(app: App) {
     const addToast = (options: any) => {
-      console.log("addToast", app.config.globalProperties.$toast);
-      app.config.globalProperties.$toast.add(options);
-    };
+      app.config.globalProperties.$toast.add(options)
+    }
 
-    const toastSuccess = (message: string, title = "Success") => {
+    const toastSuccess = (message: string, title = 'Success') => {
       addToast({
-        severity: "success",
+        severity: 'success',
         summary: title,
         detail: message,
         life: 7000,
-      });
-    };
+      })
+    }
 
-    const toastWarning = (message: string, title = "Warning") => {
+    const toastWarning = (message: string, title = 'Warning') => {
       addToast({
-        severity: "warn",
+        severity: 'warn',
         summary: title,
         detail: message,
         life: 7000,
-      });
-    };
+      })
+    }
 
-    const toastInfo = (message: string, title = "Info") => {
+    const toastInfo = (message: string, title = 'Info') => {
       addToast({
-        severity: "info",
+        severity: 'info',
         summary: title,
         detail: message,
         life: 7000,
-      });
-    };
+      })
+    }
 
-    const toastDanger = (message: string, title = "Error") => {
+    const toastDanger = (message: string, title = 'Error') => {
       addToast({
-        severity: "error",
+        severity: 'error',
         summary: title,
         detail: message,
         life: 7000,
-      });
-    };
+      })
+    }
 
-    const toastErrorHandler = (prefix = "Error", title = "Error") => {
+    const toastErrorHandler = (prefix = 'Error', title = 'Error') => {
       return (err: any = {}) => {
-        const message = err.message || err.toString() || "Unknown error";
-        const msg = prefix ? `${prefix}: ${message}` : message;
-        toastDanger(msg, title);
-        return message;
-      };
-    };
+        const message = err.message || err.toString() || 'Unknown error'
+        const msg = prefix ? `${prefix}: ${message}` : message
+        toastDanger(msg, title)
+        return message
+      }
+    }
 
     const toastService = {
       addToast,
@@ -59,9 +58,11 @@ export const ToastPlugin = {
       toastInfo,
       toastDanger,
       toastErrorHandler,
-    };
+    }
 
-    app.provide("$toast", toastService);
-    console.log("Toast plugin installed");
+    app.provide('$toast', toastService)
+
+    // eslint-disable-next-line no-console
+    console.log('Toast plugin installed')
   },
-};
+}

@@ -17,7 +17,7 @@ export class SinkRequest {
   remoteAddress = ''
   rawBody = ''
 
-  constructor (r: Partial<SinkRequest> = {}) {
+  constructor(r: Partial<SinkRequest> = {}) {
     merge(this, r)
   }
 }
@@ -27,7 +27,7 @@ export class SinkResponse {
   header: KVV = {}
   body: unknown
 
-  constructor (r: Partial<SinkResponse> = {}) {
+  constructor(r: Partial<SinkResponse> = {}) {
     merge(this, r)
   }
 }

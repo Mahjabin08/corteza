@@ -29,11 +29,11 @@ export class Reminder {
   public actions: KV = {}
   public options: KV = {}
 
-  constructor (r?: PartialReminder) {
+  constructor(r?: PartialReminder) {
     this.apply(r)
   }
 
-  apply (r?: PartialReminder): void {
+  apply(r?: PartialReminder): void {
     if (!r) return
 
     Apply(this, r, CortezaID, 'reminderID')

@@ -11,7 +11,7 @@ import {
 import { getColorschemeColors } from '../../../shared'
 
 export default class FunnelChart extends BaseChart {
-  constructor (def: PartialChart = {}) {
+  constructor(def: PartialChart = {}) {
     super(def)
 
     // Assure required fields; this helps with backwards compatibility
@@ -37,7 +37,7 @@ export default class FunnelChart extends BaseChart {
   /**
    * Since funnel charts always define one type, this check can be simplified
    */
-  mtrCheck ({ field, aggregate }: Metric) {
+  mtrCheck({ field, aggregate }: Metric) {
     if (!field) {
       throw new Error('notification.chart.invalidConfig.missingMetricsField')
     }
@@ -51,7 +51,7 @@ export default class FunnelChart extends BaseChart {
    * For example:
    * We wish to show only new and converted leads.
    */
-  formatReporterParams (r: Report) {
+  formatReporterParams(r: Report) {
     const base = super.formatReporterParams(r)
     const ff = base.filter
 
@@ -75,7 +75,7 @@ export default class FunnelChart extends BaseChart {
   }
 
   // Funnel chart creates a metric including all reports, so this step is deferred to there
-  makeDataset (m: Metric, d: Dimension, data: Array<number|any>, alias: string) {
+  makeDataset(m: Metric, d: Dimension, data: Array<number|any>, alias: string) {
     return {
       type: m.type,
       label: m.label || m.field,
@@ -88,7 +88,7 @@ export default class FunnelChart extends BaseChart {
     }
   }
 
-  makeOptions (data: any) {
+  makeOptions(data: any) {
     const { reports = [], colorScheme, noAnimation = false, toolbox } = this.config
     const { saveAsImage } = toolbox || {}
 
@@ -179,7 +179,7 @@ export default class FunnelChart extends BaseChart {
     }
   }
 
-  baseChartType (): string {
+  baseChartType(): string {
     return 'funnel'
   }
 
@@ -188,7 +188,7 @@ export default class FunnelChart extends BaseChart {
    * * generate a set of labels based on all reports, all data sets,
    * * generates a set of data based on all reports, all data sets,
    */
-  async fetchReports (a: any) {
+  async fetchReports(a: any) {
     const rr = await super.fetchReports(a) as any
     const values = []
 
@@ -267,7 +267,7 @@ export default class FunnelChart extends BaseChart {
     }
   }
 
-  isCumulative (): boolean {
+  isCumulative(): boolean {
     // Cumulative true by default
     // Find false value
     let cumulative = true
@@ -282,7 +282,7 @@ export default class FunnelChart extends BaseChart {
     return cumulative
   }
 
-  defMetric (): Metric {
+  defMetric(): Metric {
     return Object.assign(super.defMetric(), {
       type: ChartType.funnel,
       fixTooltips: false,
@@ -290,7 +290,7 @@ export default class FunnelChart extends BaseChart {
     })
   }
 
-  defDimension (): Dimension {
+  defDimension(): Dimension {
     return Object.assign({}, {
       conditions: {},
       meta: { fields: [] },

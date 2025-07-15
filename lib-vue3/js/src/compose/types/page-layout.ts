@@ -47,14 +47,14 @@ interface Meta {
 }
 
 export class PageLayout {
-  public pageLayoutID = NoID;
-  public namespaceID = NoID;
+  public pageLayoutID = NoID
+  public namespaceID = NoID
   public pageID = NoID
-  public handle = '';
+  public handle = ''
 
-  public weight = 0;
+  public weight = 0
 
-  public blocks: (Partial<PageBlock>)[] = [];
+  public blocks: (Partial<PageBlock>)[] = []
 
   public config: PageLayoutConfig = {
     visibility: {
@@ -76,19 +76,19 @@ export class PageLayout {
   public meta: Meta = {
     title: '',
     description: '',
-  };
+  }
 
-  public createdAt?: Date = undefined;
-  public updatedAt?: Date = undefined;
-  public deletedAt?: Date = undefined;
+  public createdAt?: Date = undefined
+  public updatedAt?: Date = undefined
+  public deletedAt?: Date = undefined
 
-  public ownedBy = NoID;
+  public ownedBy = NoID
 
-  constructor (pl?: PageLayoutInput) {
+  constructor(pl?: PageLayoutInput) {
     this.apply(pl)
   }
 
-  apply (pl?: PageLayoutInput): void {
+  apply(pl?: PageLayoutInput): void {
     if (!pl) return
 
     Apply(this, pl, CortezaID, 'pageLayoutID', 'namespaceID', 'pageID', 'ownedBy')
@@ -107,11 +107,11 @@ export class PageLayout {
     }
   }
 
-  clone (): PageLayout {
+  clone(): PageLayout {
     return new PageLayout(JSON.parse(JSON.stringify(this)))
   }
 
-  addAction () {
+  addAction() {
     this.config.actions.push({
       kind: 'toLayout',
       placement: 'end',
@@ -131,18 +131,18 @@ export class PageLayout {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.pageLayoutID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'compose:page-layout'
   }
 
-  export (): PageLayoutInput {
+  export(): PageLayoutInput {
     return {
       blocks: this.blocks,
       meta: this.meta,

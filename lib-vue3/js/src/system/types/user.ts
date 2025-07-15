@@ -59,11 +59,11 @@ export class User {
   public suspendedAt?: Date = undefined
   public roles?: Array<string>
 
-  constructor (u?: PartialUser) {
+  constructor(u?: PartialUser) {
     this.apply(u)
   }
 
-  apply (u?: PartialUser): void {
+  apply(u?: PartialUser): void {
     Apply(this, u, CortezaID, 'userID')
     Apply(this, u, String, 'handle', 'username', 'email', 'name')
     Apply(this, u, ISO8601Date, 'createdAt', 'updatedAt', 'deletedAt', 'suspendedAt')
@@ -88,18 +88,18 @@ export class User {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.userID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'system:user'
   }
 
-  get fts (): string {
+  get fts(): string {
     return [
       this.name,
       this.username,
@@ -109,11 +109,11 @@ export class User {
     ].join(' ').toLocaleLowerCase()
   }
 
-  clone (): User {
+  clone(): User {
     return new User(JSON.parse(JSON.stringify(this)))
   }
 
-  properties (): string[] {
+  properties(): string[] {
     return [
       'userID',
       'handle',

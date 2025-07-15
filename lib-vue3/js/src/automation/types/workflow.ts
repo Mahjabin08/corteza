@@ -17,20 +17,20 @@ export class Workflow {
   public handle = ''
   public enabled = false
   public labels: object = {}
-  public meta: object = {};
+  public meta: object = {}
 
   public runAs = NoID
-  public ownedBy = NoID;
-  public createdBy = NoID;
+  public ownedBy = NoID
+  public createdBy = NoID
   public createdAt?: Date = undefined
   public updatedAt?: Date = undefined
   public deletedAt?: Date = undefined
 
-  constructor (w?: PartialWorkflow) {
+  constructor(w?: PartialWorkflow) {
     this.apply(w)
   }
 
-  apply (w?: PartialWorkflow): void {
+  apply(w?: PartialWorkflow): void {
     Apply(this, w, CortezaID, 'workflowID')
     Apply(this, w, String, 'handle')
 
@@ -51,14 +51,14 @@ export class Workflow {
   /**
    * Returns resource ID
    */
-  get resourceID (): string {
+  get resourceID(): string {
     return `${this.resourceType}:${this.workflowID}`
   }
 
   /**
    * Resource type
    */
-  get resourceType (): string {
+  get resourceType(): string {
     return 'automation:workflow'
   }
 }

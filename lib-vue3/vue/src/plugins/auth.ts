@@ -1,7 +1,7 @@
-import axios, { AxiosInstance } from 'axios'
-import { Make } from '../libs/url'
 import { system } from '@cortezaproject/corteza-js-next'
+import axios, { AxiosInstance } from 'axios'
 import type { App } from 'vue'
+import { Make } from '../libs/url'
 
 const accessToken = Symbol('accessToken')
 const user = Symbol('user')
@@ -24,74 +24,78 @@ const storeKeyRefreshToken = 'auth.refresh-token'
 const maxStartAttempts = 5
 
 // signature copied from dom definition
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-undef
-type eventListenerSignature = <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions) => void
+// eslint-disable-next-line no-undef
+type eventListenerSignature = <K extends keyof WindowEventMap>(
+  type: K,
+  listener: (this: Window, ev: WindowEventMap[K]) => any,
+  options?: boolean | AddEventListenerOptions,
+) => void
 
 interface AuthInfo {
-  accessTokenFn: () => string | undefined;
-  user: system.User;
+  accessTokenFn: () => string | undefined
+  user: system.User
 }
 
 interface OAuth2TokenResponse {
-  aud: string;
-  sub: string;
-  scope: string;
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
+  aud: string
+  sub: string
+  scope: string
+  access_token: string
+  refresh_token: string
+  expires_in: number
 
-  roles?: string[];
-  name?: string;
-  handle?: string;
-  email?: string;
-  preferred_language?: string;
-  avatarID?: string;
-  theme?: string;
+  roles?: string[]
+  name?: string
+  handle?: string
+  email?: string
+  preferred_language?: string
+  avatarID?: string
+  theme?: string
 }
 
 interface PluginOpts {
-  cortezaAuthURL: string;
-  callbackURL: string;
+  cortezaAuthURL: string
+  callbackURL: string
 }
 
 interface AuthCtor {
-  app: string;
+  app: string
 
   /**
    * when true, use console as a logger, no-op otherwise.
    */
-  verbose: boolean;
+  verbose: boolean
 
   /**
    * where the auth backend is
    */
-  cortezaAuthURL: string;
+  cortezaAuthURL: string
 
   /**
    * URL we'll be listening to for callbacks
    */
-  callbackURL: string;
+  callbackURL: string
 
   /**
    * used for redirection
    */
-  location: Location;
+  location: Location
 
   /**
    * used for storing
    */
-  sessionStorage: Storage;
+  sessionStorage: Storage
 
   /**
    * used for event listeners
    */
-  registerEventListener: eventListenerSignature;
+  registerEventListener: eventListenerSignature
 
   /**
    * Static string with entry-point URL stored at app init
    * so that there is no risk of changes when Vue router gets it's hands on it
    */
-  entrypointURL: string;
+  entrypointURL: string
 
   /**
    * multiply factor for token expiration
@@ -100,13 +104,14 @@ interface AuthCtor {
    *
    * keep in mind that access token is exchanged on every app load
    */
-  refreshFactor: number;
+  refreshFactor: number
 }
 
 interface Logger {
-  debug(...data: unknown[]): void;
-  info(...data: unknown[]): void;
-  error(...data: unknown[]): void;
+  debug(...data: unknown[]): void
+  info(...data: unknown[]): void
+  error(...data: unknown[]): void
+  warn(...data: unknown[]): void
 }
 
 export class Auth {
@@ -149,7 +154,17 @@ export class Auth {
 
   private $emit?: (event: string, ...args: unknown[]) => unknown
 
-  constructor ({ app, verbose, cortezaAuthURL, callbackURL, entrypointURL, location, sessionStorage, refreshFactor, registerEventListener }: AuthCtor) {
+  constructor({
+    app,
+    verbose,
+    cortezaAuthURL,
+    callbackURL,
+    entrypointURL,
+    location,
+    sessionStorage,
+    refreshFactor,
+    registerEventListener,
+  }: AuthCtor) {
     if (refreshFactor >= 1 || refreshFactor <= 0) {
       throw new Error('refreshFactor should be between 0 and 1')
     }
@@ -174,45 +189,47 @@ export class Auth {
   }
 
   // Vue 3 equivalent - setup emit function
-  setupEmitter (app: App): Auth {
+  setupEmitter(app: App): Auth {
     // In Vue 3, we can use app.config.globalProperties for global event emitting
     // or implement a custom event emitter if needed
     this.$emit = (event, ...args): void => {
       // Emit to app instance if it has an emit method
       if (app && typeof (app as any).emit === 'function') {
-        (app as any).emit(event, ...args)
+        ;(app as any).emit(event, ...args)
       }
     }
     return this
   }
 
-  get axios (): AxiosInstance {
+  get axios(): AxiosInstance {
     return axios.create({ baseURL: this.cortezaAuthURL })
   }
 
   /**
    * wrapper for console (when in debug mode) or a simple no-op obj
    */
-  get log (): Logger {
+  get log(): Logger {
     if (this.verbose) {
       return console
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const noop = (): void => {}
 
     return {
       debug: noop,
       info: noop,
       error: noop,
+      warn: noop,
     }
   }
 
   /**
    * Returns function that returns current access token
    */
-  get accessTokenFn (): () => string | undefined {
-    return (): string | undefined => { return this[accessToken] }
+  get accessTokenFn(): () => string | undefined {
+    return (): string | undefined => {
+      return this[accessToken]
+    }
   }
 
   /**
@@ -229,7 +246,7 @@ export class Auth {
    *   if user is not authorized, redirect to the configured path to start oauth2 flow
    *   if user is authorized, continue with execution
    */
-  async handle (req: URL = new URL(this.entrypointURL)): Promise<AuthInfo | null> {
+  async handle(req: URL = new URL(this.entrypointURL)): Promise<AuthInfo | null> {
     this.log.info('handling authentication')
 
     // State management
@@ -247,7 +264,10 @@ export class Auth {
       }
 
       this.log.info('handling authentication callback')
-      return this.handleCallbackRoute(params.get('state'), (params.has('code') ? params.get('code') as string : ''))
+      return this.handleCallbackRoute(
+        params.get('state'),
+        params.has('code') ? (params.get('code') as string) : '',
+      )
     }
 
     // Handle auth from the current system state
@@ -269,14 +289,14 @@ export class Auth {
    * know, after the redirection to the final location, if this is a final stage or not and if the refresh token
    * belongs to this session or not.
    */
-  handleStateManagement (): boolean {
+  handleStateManagement(): boolean {
     // See if this is a duplicate
     const dup = this.sessionStorage.getItem(storeKeyFinalState) !== null
     window.sessionStorage.setItem(storeKeyFinalState, Date.now().toString())
     return dup
   }
 
-  bindListeners (): void {
+  bindListeners(): void {
     // binding multiple listeners for cases where some browser refuser
     // to emit one of them.
     this.registerEventListener('pagehide', () => {
@@ -292,7 +312,7 @@ export class Auth {
     })
   }
 
-  cleanFlags (): void {
+  cleanFlags(): void {
     this.sessionStorage.removeItem(storeKeyFinalState)
   }
 
@@ -301,7 +321,7 @@ export class Auth {
    *
    * Cleanup aux items in the session store
    */
-  completeFinalState (): void {
+  completeFinalState(): void {
     this.sessionStorage.removeItem(storeKeyFlowStarted)
 
     const stateKey = /^auth\.state\.\w+\.location$/
@@ -322,14 +342,14 @@ export class Auth {
    *
    * Function will throw null when user is unauthenticated
    */
-  async handleCallbackRoute (state: string|null, code: string): Promise<AuthInfo | null> {
+  async handleCallbackRoute(state: string | null, code: string): Promise<AuthInfo | null> {
     let finalLocation = this.entrypointURL
 
     if (state) {
       const storeKeyStateLocation = `auth.state.${state}.location`
       const tmp = this.sessionStorage.getItem(storeKeyStateLocation)
       if (tmp === null) {
-        console.warn('state does not match, restarting authentication flow')
+        this.log.warn('state does not match, restarting authentication flow')
         this.startAuthenticationFlow()
         return null
       }
@@ -364,7 +384,7 @@ export class Auth {
    *
    * Function will throw null when user is unauthenticated
    */
-  async handleState (): Promise<AuthInfo | null> {
+  async handleState(): Promise<AuthInfo | null> {
     this.log.info('checking authentication')
 
     if (this[accessToken]) {
@@ -374,29 +394,32 @@ export class Auth {
 
       this.log.info('fetching authentication info from ' + oauth2InfoURL)
 
-      return this.axios.get(oauth2InfoURL, { headers }).then(({ data }) => {
-        this.log.info('data fetch form info endpoint', { oauth2InfoURL, headers, data })
+      return this.axios
+        .get(oauth2InfoURL, { headers })
+        .then(({ data }) => {
+          this.log.info('data fetch form info endpoint', { oauth2InfoURL, headers, data })
 
-        const authUser = new system.User({
-          userID: data.sub,
-          meta: {
-            preferredLanguage: data.preferred_language || 'en',
-            avatarID: data.avatarID,
-            theme: data.theme,
-          },
-          ...data,
+          const authUser = new system.User({
+            userID: data.sub,
+            meta: {
+              preferredLanguage: data.preferred_language || 'en',
+              avatarID: data.avatarID,
+              theme: data.theme,
+            },
+            ...data,
+          })
+
+          this[user] = authUser
+
+          this.bindListeners()
+          return data
         })
-
-        this[user] = authUser
-
-        this.bindListeners()
-        return data
-      }).catch((error) => {
-        this.log.error('data fetch form info endpoint failed', { oauth2InfoURL, headers, error })
-        // assume invalid JWT and remove it
-        this[accessToken] = undefined
-        throw new Error('Unauthenticated')
-      })
+        .catch(error => {
+          this.log.error('data fetch form info endpoint failed', { oauth2InfoURL, headers, error })
+          // assume invalid JWT and remove it
+          this[accessToken] = undefined
+          throw new Error('Unauthenticated')
+        })
     }
 
     const refreshToken = this.sessionStorage.getItem(storeKeyRefreshToken)
@@ -415,23 +438,24 @@ export class Auth {
        * Refresh token found in the storage,
        * let's use it to get new access token
        */
-      return this.exchangeRefresh(refreshToken)
-        .then(r => {
-          this.bindListeners()
-          return r
-        })
+      return this.exchangeRefresh(refreshToken).then(r => {
+        this.bindListeners()
+        return r
+      })
     }
 
     throw new Error('Unauthenticated')
   }
 
-  logout (): void {
+  logout(): void {
     this.pruneStore()
 
-    this.location.assign(Make({
-      url: `${this.cortezaAuthURL}/logout`,
-      query: { back: this.location.toString() },
-    }))
+    this.location.assign(
+      Make({
+        url: `${this.cortezaAuthURL}/logout`,
+        query: { back: this.location.toString() },
+      }),
+    )
   }
 
   /**
@@ -440,26 +464,31 @@ export class Auth {
    * It generates simple rand state to harden security and to
    * keep track of before-flow-start location of the user
    */
-  startAuthenticationFlow (): void {
+  startAuthenticationFlow(): void {
     this.log.debug('starting new authentication flow')
 
     this.cleanFlags()
     this.incFlowCounter()
 
     const state = Math.random().toString(36).substring(2)
-    this.sessionStorage.setItem(`auth.state.${state}.location`, this.getRedirect(this.location.toString()))
+    this.sessionStorage.setItem(
+      `auth.state.${state}.location`,
+      this.getRedirect(this.location.toString()),
+    )
 
-    this.location.assign(Make({
-      url: `${this.cortezaAuthURL}` + oauth2FlowURL,
-      query: {
-        redirect_uri: this.callbackURL,
-        scope: oauth2Scope,
-        state,
-      },
-    }))
+    this.location.assign(
+      Make({
+        url: `${this.cortezaAuthURL}` + oauth2FlowURL,
+        query: {
+          redirect_uri: this.callbackURL,
+          scope: oauth2Scope,
+          state,
+        },
+      }),
+    )
   }
 
-  getRedirect (url: string): string {
+  getRedirect(url: string): string {
     const u = new URL(url)
 
     // In case someone started the flow on a callback route, default to the root
@@ -473,7 +502,7 @@ export class Auth {
     return u.toString()
   }
 
-  isCallback (url: string): boolean {
+  isCallback(url: string): boolean {
     return /\/auth\/callback$/.test(url)
   }
 
@@ -481,7 +510,7 @@ export class Auth {
    * protects against too many tries when we try to auto-fix the "state does not match" error
    * by restarting the aut flow.
    */
-  private incFlowCounter (): void {
+  private incFlowCounter(): void {
     const aux = this.sessionStorage.getItem(storeKeyFlowStarted)
     if (aux === null) {
       this.sessionStorage.setItem(storeKeyFlowStarted, '1')
@@ -495,29 +524,28 @@ export class Auth {
       throw new Error('could not start authentication flow, too many attempts')
     }
 
-    this.sessionStorage.setItem(
-      storeKeyFlowStarted,
-      (count + 1).toString(),
-    )
+    this.sessionStorage.setItem(storeKeyFlowStarted, (count + 1).toString())
   }
 
-  startAutoLogout (): Promise<number> {
+  startAutoLogout(): Promise<number> {
     const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || ''
-    return this.exchangeRefresh(tkn).then(() => {
-      if (this.refreshTimeout) {
-        window.clearTimeout(this.refreshTimeout)
-      }
+    return this.exchangeRefresh(tkn)
+      .then(() => {
+        if (this.refreshTimeout) {
+          window.clearTimeout(this.refreshTimeout)
+        }
 
-      return this.expiresIn
-    }).catch((err) => {
-      this.log.error('refresh token exchange failed', err)
-      throw err
-    })
+        return this.expiresIn
+      })
+      .catch(err => {
+        this.log.error('refresh token exchange failed', err)
+        throw err
+      })
   }
 
-  stopAutoLogout (): Promise<AuthInfo | null> {
+  stopAutoLogout(): Promise<AuthInfo | null> {
     const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || ''
-    return this.exchangeRefresh(tkn).catch((err) => {
+    return this.exchangeRefresh(tkn).catch(err => {
       this.log.error('refresh token exchange failed', err)
       throw err
     })
@@ -526,12 +554,12 @@ export class Auth {
   /**
    * Exchanges authorization code for access and refresh tokens
    */
-  private async exchangeCode (code = ''): Promise<AuthInfo> {
+  private async exchangeCode(code = ''): Promise<AuthInfo> {
     return this.oauth2token({
       code,
       scope: oauth2Scope,
       redirect_uri: this.callbackURL,
-    }).then((oa2tr) => this.procTokenResponse(oa2tr))
+    }).then(oa2tr => this.procTokenResponse(oa2tr))
   }
 
   /**
@@ -542,7 +570,7 @@ export class Auth {
    *
    * @param refreshToken
    */
-  private async exchangeRefresh (refreshToken: string): Promise<AuthInfo | null> {
+  private async exchangeRefresh(refreshToken: string): Promise<AuthInfo | null> {
     /**
      * Finalize
      */
@@ -550,8 +578,9 @@ export class Auth {
 
     return this.oauth2token({
       refresh_token: refreshToken || '',
-    }).then((oa2tr) => this.procTokenResponse(oa2tr))
-      .catch((err) => {
+    })
+      .then(oa2tr => this.procTokenResponse(oa2tr))
+      .catch(err => {
         const { response: { data: { error = undefined } = {} } = {} } = err
         if (error === 'invalid_grant') {
           this.pruneStore()
@@ -570,7 +599,7 @@ export class Auth {
    * @param oa2tkn OAuth2 token response
    * @private
    */
-  private procTokenResponse (oa2tkn: OAuth2TokenResponse): AuthInfo {
+  private procTokenResponse(oa2tkn: OAuth2TokenResponse): AuthInfo {
     this.log.debug('new token', oa2tkn)
 
     if (this.refreshTimeout) {
@@ -588,12 +617,11 @@ export class Auth {
 
     // Schedule next refresh
     this.refreshTimeout = window.setTimeout(async () => {
-      const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || '';
-      await this.exchangeRefresh(tkn)
-        .catch((err) => {
-          this.log.error('refresh token exchange failed', err)
-          this.startAuthenticationFlow()
-        })
+      const tkn = this.sessionStorage.getItem(storeKeyRefreshToken) || ''
+      await this.exchangeRefresh(tkn).catch(err => {
+        this.log.error('refresh token exchange failed', err)
+        this.startAuthenticationFlow()
+      })
     }, 1000 * timeout)
 
     this.sessionStorage.setItem(storeKeyRefreshToken, oa2tkn.refresh_token)
@@ -619,7 +647,9 @@ export class Auth {
     }
 
     return {
-      accessTokenFn: (): string | undefined => { return this[accessToken] },
+      accessTokenFn: (): string | undefined => {
+        return this[accessToken]
+      },
       user: u,
     }
   }
@@ -630,7 +660,7 @@ export class Auth {
    * @param payload
    * @private
    */
-  private async oauth2token (payload: Record<string, string>): Promise<OAuth2TokenResponse> {
+  private async oauth2token(payload: Record<string, string>): Promise<OAuth2TokenResponse> {
     const data = new URLSearchParams()
 
     this.log.debug('exchanging for token', payload)
@@ -646,24 +676,24 @@ export class Auth {
     return this.axios.post(oauth2FlowURL, data, config).then(({ data }) => data)
   }
 
-  private pruneStore (): void {
+  private pruneStore(): void {
     this[accessToken] = undefined
     this[user] = undefined
     this.sessionStorage.clear()
   }
 
-  get accessToken (): string | undefined {
+  get accessToken(): string | undefined {
     return this[accessToken]
   }
 
-  get user (): system.User | undefined {
+  get user(): system.User | undefined {
     return this[user]
   }
 }
 
 // Vue 3 Plugin interface
 interface Auth2PluginOptions extends Partial<AuthCtor> {
-  rootApp?: boolean;
+  rootApp?: boolean
 }
 
 export default {
@@ -720,7 +750,7 @@ export default {
 
     if (!callbackURL) {
       if (!appName) {
-        throw new Error('can not construct callbackURL; specify \'callbackURL\' or \'app\' property')
+        throw new Error("can not construct callbackURL; specify 'callbackURL' or 'app' property")
       }
 
       // @ts-ignore
@@ -754,23 +784,11 @@ export default {
 
     if (verbose === undefined) {
       // enable debug (when not expl. disabled on localhost)
-      verbose = location.hostname === 'localhost' ||
+      verbose =
+        location.hostname === 'localhost' ||
         window.location.search.includes('verboseAuth') ||
         !!window.localStorage.getItem('auth.verbose') ||
         !!window.sessionStorage.getItem('auth.verbose')
-    }
-
-    if (verbose) {
-      console.debug({
-        app: appName,
-        verbose,
-        cortezaAuthURL,
-        callbackURL,
-        location,
-        sessionStorage,
-        entrypointURL,
-        refreshFactor,
-      })
     }
 
     const authInstance = new Auth({
@@ -790,5 +808,5 @@ export default {
 
     // Vue 3 way: Provide for Composition API
     app.provide('auth', authInstance)
-  }
+  },
 }

@@ -10,7 +10,11 @@
     "src/"
   ],
   "scripts": {
-    "cdeps": "yarn link @cortezaproject/corteza-js-next"
+    "cdeps": "yarn link @cortezaproject/corteza-js-next",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
   },
   "dependencies": {
     "@cortezaproject/corteza-js-next": "file:../js",
@@ -24,6 +28,15 @@
   },
   "devDependencies": {
     "@types/qs": "^6.14.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@eslint/js": "^9.29.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^10.2.0",
+    "globals": "^16.2.0",
+    "prettier": "^3.0.0",
+    "vue-eslint-parser": "^10.1.4"
   }
 }
