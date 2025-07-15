@@ -298,7 +298,7 @@
 "@cortezaproject/corteza-vue-next@file:../../../lib-vue3/vue":
   version "2025.9.0-dev.1"
   dependencies:
-    "@cortezaproject/corteza-js-next" "file:../../../../../.cache/yarn/v6/npm-@cortezaproject-corteza-vue-next-2025.9.0-dev.1-dbc08f80-1d68-46af-bb81-39d96ad5a07c-1752489725001/node_modules/@cortezaproject/js"
+    "@cortezaproject/corteza-js-next" "file:../../../../../.cache/yarn/v6/npm-@cortezaproject-corteza-vue-next-2025.9.0-dev.1-09f74a59-bc71-493e-803a-e52631151bb3-1752570211905/node_modules/@cortezaproject/js"
     "@primeuix/themes" "^1.2.1"
     axios "^1.10.0"
     primeicons "^7.0.0"
@@ -2878,7 +2878,7 @@ primeicons@^7.0.0:
   resolved "https://registry.yarnpkg.com/primeicons/-/primeicons-7.0.0.tgz#6b25c3fdcb29bb745a3035bdc1ed5902f4a419cf"
   integrity sha512-jK3Et9UzwzTsd6tzl2RmwrVY/b8raJ3QZLzoDACj+oTJ0oX7L9Hy+XnVwgo4QVKlKpnP/Ur13SXV/pVh4LzaDw==
 
-primevue@^4.3.5:
+primevue@^4.3.5, primevue@^4.3.6:
   version "4.3.6"
   resolved "https://registry.yarnpkg.com/primevue/-/primevue-4.3.6.tgz#bcf525d417ad3fe5e89e905bb2abcd31d23ab94f"
   integrity sha512-Wwg2dH6pBmOdkj9L/OnrCQf9AKPHfY5CcfnDyWeh0tNlR+XjYKGl8qvMdJOvGO9jjg6UdsX5MSaU8vDDsSG+sg==

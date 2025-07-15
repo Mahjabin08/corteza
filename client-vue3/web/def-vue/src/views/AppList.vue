@@ -21,7 +21,7 @@
             @click="!app.enabled && $event.preventDefault()"
           >
             <Card
-              class="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 w-80 flex-shrink-0"
+              class="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 w-80"
             >
               <template #header>
                 <img :src="getAppLogoUrl(app)" :alt="app.unify?.name || app.name" />
